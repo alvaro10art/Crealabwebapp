@@ -161,6 +161,31 @@
   .cart-btn svg{flex-shrink:0;}
   @media (max-width:820px){ .cart-label{display:none;} .cart-btn{padding:9px;} }
 
+  /* ---- Botón "Instalar app" (PWA) ---- */
+  .btn-install{background:transparent; color:var(--ink); border-color:var(--line);}
+  .btn-install:hover{border-color:var(--clay); color:var(--clay);}
+  .btn-install:disabled{opacity:.6; cursor:default; transform:none;}
+  .btn-install svg{flex-shrink:0;}
+  @media (max-width:820px){ .install-label{display:none;} .btn-install{padding:9px;} }
+
+  /* ---- Modal de instrucciones para instalar en iPhone (Safari) ---- */
+  .ios-install-overlay{
+    position:fixed; inset:0; background:rgba(13,13,13,0.55); z-index:400;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    opacity:0; pointer-events:none; transition:opacity .2s;
+  }
+  .ios-install-overlay.open{opacity:1; pointer-events:auto;}
+  .ios-install-card{
+    background:#fff; border-radius:18px; max-width:360px; width:100%;
+    padding:26px 24px 22px; box-shadow:0 24px 60px rgba(0,0,0,0.25);
+    text-align:left;
+  }
+  .ios-install-card h3{font-size:18px; margin:0 0 6px;}
+  .ios-install-card p{font-size:13.5px; margin:0 0 14px;}
+  .ios-install-card ol{margin:0 0 18px; padding-left:20px; display:grid; gap:8px; font-size:13.5px; color:var(--ink-soft);}
+  .ios-install-card ol strong{color:var(--ink);}
+  .ios-install-card .btn{width:100%; justify-content:center;}
+
   /* ---- Mega-menú de navegación (tipo Domestika) ---- */
   .nav-links li{position:relative; display:flex; align-items:center;}
   .nav-drop-trigger{
@@ -665,6 +690,10 @@
         </a>
         <a href="#submarcas" class="btn btn-ghost">Explorar</a>
         <a href="creallab-portal.html" class="btn btn-ghost">Mi cuenta</a>
+        <button id="btn-instalar-app" class="btn btn-install" type="button" style="display:none;" aria-label="Instalar la app de CREALLAB">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+          <span class="install-label">Instalar app</span>
+        </button>
         <a href="#join" class="btn btn-primary">Únete</a>
         <button class="nav-toggle" id="navToggle" aria-label="Abrir menú">
           <span></span><span></span><span></span>
@@ -673,6 +702,20 @@
     </nav>
   </div>
 </header>
+
+<!-- ============ Instrucciones para instalar en iPhone (Safari no soporta instalación automática) ============ -->
+<div id="ios-install-overlay" class="ios-install-overlay">
+  <div class="ios-install-card">
+    <h3>Instalar CREALLAB en tu iPhone</h3>
+    <p>Safari no deja instalar apps con un solo clic — son 3 pasos rápidos:</p>
+    <ol>
+      <li><strong>Toca el ícono de compartir</strong> (el cuadrado con la flecha hacia arriba) en la barra de Safari.</li>
+      <li>Baja y elige <strong>"Agregar a pantalla de inicio"</strong>.</li>
+      <li>Confirma tocando <strong>"Agregar"</strong>, arriba a la derecha.</li>
+    </ol>
+    <button type="button" class="btn btn-primary" id="ios-install-cerrar">Entendido</button>
+  </div>
+</div>
 
 <!-- ============ HERO ============ -->
 <section class="hero">
@@ -1269,6 +1312,59 @@
       navigator.serviceWorker.register("sw.js").catch(() => {});
     });
   }
+</script>
+
+<script>
+  // Botón "Instalar app" propio (además del ícono que ya pone el
+  // navegador solo) — en Chrome/Edge dispara el instalador nativo;
+  // en Safari de iPhone, que no lo soporta, muestra los 3 pasos manuales.
+  (function () {
+    const btn = document.getElementById("btn-instalar-app");
+    if (!btn) return;
+
+    const yaInstalada =
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true;
+    if (yaInstalada) return;
+
+    const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    if (esIOS) {
+      const overlay = document.getElementById("ios-install-overlay");
+      const cerrar = document.getElementById("ios-install-cerrar");
+      btn.style.display = "";
+      btn.addEventListener("click", () => overlay.classList.add("open"));
+      cerrar?.addEventListener("click", () => overlay.classList.remove("open"));
+      overlay?.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.classList.remove("open");
+      });
+      return;
+    }
+
+    let deferredPrompt = null;
+
+    window.addEventListener("beforeinstallprompt", (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btn.style.display = "";
+    });
+
+    btn.addEventListener("click", () => {
+      if (!deferredPrompt) return;
+      btn.disabled = true;
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.finally(() => {
+        deferredPrompt = null;
+        btn.disabled = false;
+        btn.style.display = "none";
+      });
+    });
+
+    window.addEventListener("appinstalled", () => {
+      btn.style.display = "none";
+      deferredPrompt = null;
+    });
+  })();
 </script>
 
 </body>
