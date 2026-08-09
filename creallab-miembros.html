@@ -87,6 +87,10 @@
   .mc-level{font-size:12px; font-weight:600;}
   .mc-pts{font-size:11px; color:var(--ink-soft);}
   .mc-link{font-size:12px; font-weight:700; color:var(--clay);}
+  .mc-fundador{
+    display:inline-flex; align-items:center; gap:4px; font-size:10.5px; font-weight:700;
+    color:#8A6300; background:rgba(196,146,0,0.12); padding:3px 9px; border-radius:999px; margin-bottom:8px;
+  }
 
   .empty-state{padding:60px 20px; text-align:center;}
   .hidden{display:none !important;}
@@ -141,10 +145,13 @@
     });
   }
 
+  const NIVEL_LABEL = { explorador:"Explorador", creador:"Creador", mentor:"Mentor", nodo:"Nodo" };
+
   function memberCard(m){
     const initial = (m.nombre || m.handle || "A").charAt(0).toUpperCase();
     const tags = (m.mundos || []).map(w => `<span class="world-tag">${w}</span>`).join("");
     const avatarStyle = m.avatar_url ? ` style="background-image:url('${m.avatar_url}'); background-size:cover; background-position:center;"` : "";
+    const nivelTexto = NIVEL_LABEL[m.nivel] || m.nivel || "Explorador";
     return `
       <a class="member-card" href="creallab-perfil.html?u=${encodeURIComponent(m.handle)}">
         <div class="mc-top">
@@ -154,10 +161,11 @@
             <span class="mc-handle">@${m.handle}</span>
           </div>
         </div>
+        ${m.fundador ? `<span class="mc-fundador">🏅 Miembro Fundador</span>` : ""}
         ${m.bio ? `<p class="mc-bio">${m.bio}</p>` : ""}
         <div class="mc-tags">${tags}</div>
         <div class="mc-bottom">
-          <span class="mc-level">${(m.nivel || "Aprendiz")} <span class="mc-pts">· ${m.puntos || 0} pts</span></span>
+          <span class="mc-level">${nivelTexto} <span class="mc-pts">· ${m.puntos || 0} pts</span></span>
           <span class="mc-link">Ver perfil →</span>
         </div>
       </a>`;
@@ -181,9 +189,9 @@
   // ---------- MODO DEMO ----------
   if (DEMO_MODE) {
     allMembers = [
-      { nombre:"Miembro Ejemplo", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", mundos:["ALLtaller","ALLquimia"], nivel:"Oficial", puntos:65 },
-      { nombre:"Sofía Ramírez", handle:"sofia-ramirez", bio:"Grabadora y encuadernadora, entre lo ancestral y lo experimental.", mundos:["ALLytectura"], nivel:"Maestro", puntos:140 },
-      { nombre:"Diego Huamán", handle:"diego-huaman", bio:"Explorando pigmentos naturales y procesos de tinte.", mundos:["ALLquimia","ALLegado"], nivel:"Aprendiz", puntos:15 },
+      { nombre:"Miembro Ejemplo", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", mundos:["ALLtaller","ALLquimia"], nivel:"creador", puntos:350, fundador:true },
+      { nombre:"Sofía Ramírez", handle:"sofia-ramirez", bio:"Grabadora y encuadernadora, entre lo ancestral y lo experimental.", mundos:["ALLytectura"], nivel:"mentor", puntos:1400, fundador:true },
+      { nombre:"Diego Huamán", handle:"diego-huaman", bio:"Explorando pigmentos naturales y procesos de tinte.", mundos:["ALLquimia","ALLegado"], nivel:"explorador", puntos:15, fundador:false },
     ];
     renderMembers(allMembers);
     return;
@@ -195,7 +203,7 @@
   (async () => {
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id,nombre,handle,bio,avatar_url")
+      .select("id,nombre,handle,bio,avatar_url,nivel,fundador")
       .eq("perfil_publico", true)
       .not("handle", "is", null)
       .order("nombre", { ascending: true });
@@ -204,23 +212,22 @@
     if (!list.length) { renderMembers([]); return; }
 
     const ids = list.map(p => p.id);
-    const [{ data: mundosRows }, { data: statsRows }] = await Promise.all([
+    const [{ data: mundosRows }, { data: puntosRows }] = await Promise.all([
       supabase.from("member_mundos").select("member_id,mundo").in("member_id", ids),
-      supabase.from("member_stats").select("member_id,puntos,nivel").in("member_id", ids),
+      supabase.from("puntos_totales").select("profile_id,total").in("profile_id", ids),
     ]);
 
     const mundosByMember = {};
     (mundosRows || []).forEach(r => {
       (mundosByMember[r.member_id] = mundosByMember[r.member_id] || []).push(r.mundo);
     });
-    const statsByMember = {};
-    (statsRows || []).forEach(r => { statsByMember[r.member_id] = r; });
+    const puntosByMember = {};
+    (puntosRows || []).forEach(r => { puntosByMember[r.profile_id] = r.total; });
 
     allMembers = list.map(p => ({
       ...p,
       mundos: mundosByMember[p.id] || [],
-      nivel: (statsByMember[p.id] && statsByMember[p.id].nivel) || "Aprendiz",
-      puntos: (statsByMember[p.id] && statsByMember[p.id].puntos) || 0,
+      puntos: puntosByMember[p.id] || 0,
     }));
 
     renderMembers(allMembers);
