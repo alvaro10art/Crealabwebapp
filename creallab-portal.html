@@ -1,0 +1,1569 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi cuenta — CREALLAB</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:      #FFFFFF;
+    --paper-2:    #EDEDED;
+    --ink:        #121212;
+    --ink-soft:   #5A5A5A;
+    --clay:       #D7222A;
+    --teal:       #1A1A1A;
+    --teal-light: #E4383F;
+    --night:      #0D0D0D;
+    --night-2:    #1B1B1B;
+    --line:       rgba(17,17,17,0.14);
+    --line-on-night: rgba(255,255,255,0.16);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit;}
+  h1,h2,h3{font-family:var(--serif); margin:0 0 .4em; font-weight:600;}
+  p{margin:0 0 1em; color:var(--ink-soft);}
+  .container{max-width:1040px; margin:0 auto; padding:0 24px;}
+
+  /* ---------- header ---------- */
+  header{
+    border-bottom:1px solid var(--line); padding:16px 0;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  header .container{display:flex; align-items:center; justify-content:space-between;}
+  .brand-name{font-family:var(--serif); font-weight:600; font-size:20px; letter-spacing:.01em;}
+  .brand-name .all{color:var(--clay);}
+  .btn{
+    font-family:var(--sans); font-weight:600; font-size:13.5px;
+    padding:9px 18px; border-radius:999px; border:1px solid var(--line);
+    background:transparent; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-primary{background:var(--clay); color:#fff; border-color:var(--clay);}
+  .btn-primary:hover{background:var(--teal-light);}
+  .btn-ghost:hover{border-color:var(--ink);}
+  .btn:disabled{opacity:.55; cursor:not-allowed;}
+
+  /* ---------- demo banner ---------- */
+  .demo-banner{
+    background:#FFF7E6; border-bottom:1px solid #F0D999; color:#7A5A00;
+    font-size:13px; text-align:center; padding:8px 16px;
+  }
+
+  /* ---------- login ---------- */
+  .login-wrap{
+    min-height:calc(100vh - 60px); display:flex; align-items:center; justify-content:center;
+    padding:40px 20px;
+    background:
+      repeating-linear-gradient(115deg, transparent 0 38px, var(--line) 38px 39px),
+      var(--paper);
+  }
+  .login-card{
+    width:100%; max-width:380px; background:#fff; border:1px solid var(--line);
+    border-radius:16px; padding:32px 28px; box-shadow:0 20px 50px rgba(0,0,0,0.06);
+  }
+  .login-card h1{font-size:22px;}
+  .login-card .lede{font-size:13.5px; margin-bottom:22px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; margin-bottom:6px; color:var(--ink-soft);}
+  .field input{
+    width:100%; padding:11px 13px; border-radius:9px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:14px; background:var(--paper-2);
+  }
+  .field input:focus{outline:2px solid var(--clay); outline-offset:1px; background:#fff;}
+  .login-actions{display:flex; flex-direction:column; gap:10px; margin-top:18px;}
+  .tab-row{display:flex; gap:4px; background:var(--paper-2); border-radius:999px; padding:4px; margin-bottom:22px;}
+  .tab-row button{
+    flex:1; border:none; background:transparent; padding:8px 10px; border-radius:999px;
+    font-family:var(--sans); font-weight:600; font-size:12.5px; cursor:pointer; color:var(--ink-soft);
+  }
+  .tab-row button.active{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+  .msg{font-size:12.5px; margin-top:12px; padding:9px 11px; border-radius:8px;}
+  .msg.error{background:#FDECEC; color:#A11; }
+  .msg.ok{background:#EAF6EC; color:#1A6B33;}
+  .hidden{display:none !important;}
+
+  /* ---------- dashboard ---------- */
+  .dash-hero{
+    padding:34px 0 26px; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;
+  }
+  .dash-hero .who{display:flex; align-items:center; gap:14px;}
+  .avatar{
+    width:52px; height:52px; border-radius:50%; background:var(--night);
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    font-family:var(--serif); font-size:18px; flex-shrink:0;
+  }
+  .world-tag{
+    display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:700;
+    letter-spacing:.03em; text-transform:uppercase; color:var(--clay);
+    background:rgba(215,34,42,0.08); padding:4px 10px; border-radius:999px;
+  }
+  .world-tags{display:flex; gap:6px; flex-wrap:wrap; margin-top:4px;}
+  .world-tags .empty-tag{font-size:12px; color:var(--ink-soft); font-style:italic;}
+
+  /* ---------- selector de mundos de interés ---------- */
+  .mundos-note{font-size:12.5px; margin-bottom:14px;}
+  .mundos-grid{display:flex; flex-wrap:wrap; gap:10px;}
+  .mundo-chip{
+    display:flex; align-items:flex-start; gap:9px; cursor:pointer;
+    border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+    flex:1 1 190px; transition:border-color .15s, background .15s;
+  }
+  .mundo-chip:hover{border-color:var(--ink);}
+  .mundo-chip.selected{border-color:var(--clay); background:rgba(215,34,42,0.05);}
+  .mundo-chip input{margin-top:3px; accent-color:var(--clay); flex-shrink:0;}
+  .mundo-chip .mc-name{font-weight:700; font-size:13px; display:block;}
+  .mundo-chip .mc-desc{font-size:11.5px; color:var(--ink-soft); display:block; margin-top:2px;}
+  .mundos-actions{margin-top:16px; display:flex; align-items:center; gap:12px;}
+  .mundos-msg{font-size:12.5px; color:var(--ink-soft);}
+  .dash-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr));
+    gap:18px; padding:28px 0 60px;
+  }
+  .card{
+    border:1px solid var(--line); border-radius:14px; padding:20px 20px 18px; background:#fff;
+  }
+  .card h2{font-size:15px; font-family:var(--sans); font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px;}
+  .card h2 .dot{width:7px; height:7px; border-radius:50%; background:var(--clay);}
+  .row-item{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px;
+  }
+  .row-item:last-child{border-bottom:none;}
+  .pill{font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap;}
+  .pill.entregado{background:#EAF6EC; color:#1A6B33;}
+  .pill.enviado{background:#EAF2FD; color:#1A56A0;}
+  .pill.proceso, .pill.pendiente{background:#FFF3E0; color:#9A6300;}
+  .pill.aprobado{background:#EAF6EC; color:#1A6B33;}
+  .pill.rechazado{background:#FDECEC; color:#A11;}
+  .pill.confirmada{background:#EAF6EC; color:#1A6B33;}
+  .pill.rechazada{background:#FDECEC; color:#A11;}
+  .progress-bar{height:6px; border-radius:999px; background:var(--paper-2); overflow:hidden; margin-top:6px;}
+  .progress-bar span{display:block; height:100%; background:var(--clay);}
+  .empty{font-size:13px; color:var(--ink-soft); font-style:italic;}
+  .card.wide{grid-column:1 / -1;}
+
+  /* ---------- nivel / puntos ---------- */
+  .level-badge{
+    display:flex; align-items:center; gap:10px; padding:8px 14px;
+    border:1px solid var(--line); border-radius:12px; background:var(--paper-2);
+  }
+  .level-badge .lvl-name{font-family:var(--serif); font-weight:600; font-size:15px;}
+  .level-badge .lvl-pts{font-size:11.5px; color:var(--ink-soft);}
+
+  /* ---------- perfil público ---------- */
+  .toggle-row{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:10px 0; border-bottom:1px solid var(--line); margin-bottom:14px;}
+  .switch{position:relative; width:42px; height:24px; flex-shrink:0;}
+  .switch input{opacity:0; width:0; height:0;}
+  .switch .track{position:absolute; inset:0; background:var(--paper-2); border:1px solid var(--line); border-radius:999px; cursor:pointer; transition:background .15s;}
+  .switch .track::before{content:""; position:absolute; width:18px; height:18px; left:2px; top:2px; background:#fff; border-radius:50%; box-shadow:0 1px 2px rgba(0,0,0,0.25); transition:transform .15s;}
+  .switch input:checked + .track{background:var(--clay); border-color:var(--clay);}
+  .switch input:checked + .track::before{transform:translateX(18px);}
+  .field-inline{margin-bottom:12px;}
+  .field-inline label{display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--ink-soft);}
+  .field-inline input, .field-inline textarea{
+    width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:13.5px; background:var(--paper-2); resize:vertical;
+  }
+  .public-link{font-size:12.5px; word-break:break-all;}
+  .public-link a{color:var(--clay); font-weight:600;}
+
+  /* ---------- obras (portafolio) ---------- */
+  .obras-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:12px; margin-bottom:16px;}
+  .obra-card{border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .obra-card img{width:100%; height:100px; object-fit:cover; display:block; background:var(--paper-2);}
+  .obra-card .oc-body{padding:8px 10px;}
+  .obra-card strong{font-size:12px; display:block;}
+  .obra-card .oc-del{font-size:11px; color:var(--clay); cursor:pointer; background:none; border:none; padding:4px 0 0; font-family:var(--sans);}
+  .obra-form{display:grid; grid-template-columns:1fr 1fr; gap:10px; border-top:1px solid var(--line); padding-top:14px;}
+  .obra-form .full{grid-column:1 / -1;}
+
+  /* ---------- mis productos (catálogo) ---------- */
+  .producto-form{display:grid; grid-template-columns:1fr 1fr; gap:10px; border-top:1px solid var(--line); padding-top:14px;}
+  .producto-form .full{grid-column:1 / -1;}
+  .producto-item{padding:12px 0; border-bottom:1px solid var(--line);}
+  .producto-item:last-child{border-bottom:none;}
+  .producto-item-top{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .producto-item-top strong{font-size:13.5px;}
+  .producto-item-meta{font-size:11.5px; color:var(--ink-soft); margin-top:3px;}
+  .producto-del{font-size:11px; color:var(--clay); cursor:pointer; background:none; border:none; padding:6px 0 0; font-family:var(--sans);}
+
+  /* ---------- mis ventas (comisiones) ---------- */
+  .venta-item{padding:12px 0; border-bottom:1px solid var(--line);}
+  .venta-item:last-child{border-bottom:none;}
+  .venta-split{font-size:11.5px; color:var(--ink-soft); margin-top:5px; line-height:1.5;}
+  .venta-del{font-size:11px; color:var(--clay); cursor:pointer; background:none; border:none; padding:6px 0 0; font-family:var(--sans);}
+
+  /* ---------- mensajes de compradores ---------- */
+  .conv-item{border-bottom:1px solid var(--line);}
+  .conv-item:last-child{border-bottom:none;}
+  .conv-item-head{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:12px 0; cursor:pointer;}
+  .conv-item-head strong{font-size:13.5px; display:block;}
+  .conv-item-head span{font-size:11.5px; color:var(--ink-soft);}
+  .conv-item-body{max-height:0; overflow:hidden; transition:max-height .2s ease;}
+  .conv-item.open .conv-item-body{max-height:640px;}
+  .conv-item-body-inner{padding:0 0 16px;}
+  .conv-log{max-height:260px; overflow-y:auto; display:flex; flex-direction:column; margin-bottom:10px; padding:10px; background:var(--paper-2); border-radius:10px;}
+  .conv-msg{max-width:80%; padding:8px 12px; border-radius:12px; font-size:12.5px; line-height:1.4; margin-bottom:8px;}
+  .conv-msg.mio{background:var(--clay); color:#fff; margin-left:auto; border-bottom-right-radius:4px;}
+  .conv-msg.otro{background:#fff; margin-right:auto; border-bottom-left-radius:4px; border:1px solid var(--line);}
+  .conv-msg img{max-width:100%; border-radius:8px; margin-top:5px; display:block;}
+  .conv-msg .hora{font-size:9.5px; opacity:.65; margin-top:4px; display:block;}
+  .conv-reply{display:flex; flex-direction:column; gap:8px;}
+  .conv-reply textarea{width:100%; padding:9px 11px; border-radius:8px; border:1px solid var(--line); font-family:var(--sans); font-size:13px; resize:vertical; min-height:50px;}
+  .conv-reply-row{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .conv-reply-row input[type="file"]{font-size:11px; flex:1; min-width:140px;}
+  .conv-cerrar-btn{font-size:11px; color:var(--clay); background:none; border:none; cursor:pointer; font-family:var(--sans); padding:0; margin-top:8px;}
+  .conv-cerrada-note{font-size:11.5px; color:var(--ink-soft); font-style:italic;}
+
+  /* ---------- premios ---------- */
+  .premio-item{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .premio-item:last-child{border-bottom:none;}
+  .premio-icon{width:30px; height:30px; border-radius:50%; background:rgba(215,34,42,0.08); color:var(--clay); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;}
+
+  /* ---------- ventana emergente: crear perfil ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(13,13,13,0.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal-card{
+    background:#fff; border-radius:18px; max-width:400px; width:100%; padding:32px 26px;
+    text-align:center; box-shadow:0 30px 70px rgba(0,0,0,0.25);
+  }
+  .modal-icon{font-size:30px; margin-bottom:8px;}
+  .modal-card h2{font-size:19px;}
+  .modal-card p{font-size:13px; margin-bottom:0;}
+  .modal-card .login-actions{margin-top:22px;}
+  .modal-card .toggle-row{margin-top:22px;}
+  .modal-close{
+    position:absolute; top:14px; right:14px; width:28px; height:28px; border-radius:50%;
+    border:1px solid var(--line); background:#fff; cursor:pointer; font-size:16px; line-height:1;
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center; padding:0;
+    z-index:5;
+  }
+  .modal-close:hover{border-color:var(--ink); color:var(--ink);}
+  .public-link-btn{
+    margin-top:12px; display:inline-flex; align-items:center; gap:6px;
+  }
+
+  /* ---------- editor de foto de perfil / portada ---------- */
+  .perfil-editor-cover{
+    height:110px; position:relative;
+    background-size:cover; background-position:center;
+    background:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.08) 0 38px, transparent 38px 76px),
+      linear-gradient(135deg, var(--night) 0%, #2a2a2a 100%);
+  }
+  .cover-upload-btn{
+    position:absolute; right:10px; bottom:10px; background:rgba(255,255,255,0.94); color:var(--ink);
+    font-size:11px; font-weight:700; padding:6px 12px; border-radius:999px; cursor:pointer;
+  }
+  .cover-upload-btn:hover{background:#fff;}
+  .perfil-editor-avatar-wrap{display:flex; justify-content:center; margin-top:-38px;}
+  .perfil-editor-avatar{
+    width:76px; height:76px; border-radius:50%; background:var(--night); color:#fff; border:4px solid #fff;
+    display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-size:26px; position:relative;
+    background-size:cover; background-position:center; box-shadow:0 4px 12px rgba(0,0,0,0.15);
+  }
+  .avatar-upload-btn{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.35);
+    color:#fff; font-size:16px; opacity:0; cursor:pointer; transition:opacity .15s; border-radius:50%;
+  }
+  .perfil-editor-avatar:hover .avatar-upload-btn{opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIGURACIÓN (reemplazar con tu proyecto Supabase) ============ -->
+<script>
+  // 1) Ve a supabase.com → tu proyecto → Project Settings → API
+  // 2) Copia "Project URL" y pégalo abajo en SUPABASE_URL
+  // 3) Copia la clave "anon public" y pégala en SUPABASE_ANON_KEY
+  //    (esa clave es pública / segura de exponer en el navegador: la
+  //    seguridad real la dan las políticas RLS del esquema SQL)
+  const SUPABASE_URL = "https://gyqqrfvdivlplghnboqb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cXFyZnZkaXZscGxnaG5ib3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjAyMDEsImV4cCI6MjEwMTYzNjIwMX0.5BEtTrA3BvsAO5daypauQgSXIYtOk7MOuMIzt0UpqWQ";
+  const DEMO_MODE = SUPABASE_URL.includes("TU_PROJECT_URL_AQUI");
+</script>
+
+<header>
+  <div class="container">
+    <div class="brand-name">CRE<span class="all">ALL</span>AB <span style="font-size:12px; font-weight:400; color:var(--ink-soft);">· mi cuenta</span></div>
+    <div style="display:flex; align-items:center; gap:10px;">
+      <button id="btn-abrir-perfil" class="btn btn-ghost hidden">Mi perfil público</button>
+      <button id="btn-logout" class="btn btn-ghost hidden">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+<div id="demo-banner" class="demo-banner hidden">
+  Estás viendo datos de ejemplo. Conecta tu proyecto de Supabase en el bloque de configuración al inicio del archivo para activar cuentas reales.
+</div>
+
+<!-- ============ LOGIN ============ -->
+<section id="view-login" class="login-wrap">
+  <div class="login-card">
+    <h1>Entra a tu mundo ALL</h1>
+    <p class="lede">Tu cuenta personal dentro del ecosistema CREALLAB.</p>
+    <div class="tab-row">
+      <button id="tab-signin" class="active">Iniciar sesión</button>
+      <button id="tab-signup">Crear cuenta</button>
+    </div>
+    <form id="form-auth">
+      <div class="field">
+        <label for="email">Correo</label>
+        <input type="email" id="email" required autocomplete="email" placeholder="tu@correo.com">
+      </div>
+      <div class="field">
+        <label for="password">Contraseña</label>
+        <input type="password" id="password" required autocomplete="current-password" minlength="6" placeholder="••••••••">
+      </div>
+      <div class="login-actions">
+        <button type="submit" id="btn-submit" class="btn btn-primary">Iniciar sesión</button>
+      </div>
+    </form>
+    <div id="auth-msg"></div>
+  </div>
+</section>
+
+<!-- ============ DASHBOARD ============ -->
+<main id="view-dashboard" class="hidden">
+  <div class="container">
+    <div class="dash-hero">
+      <div class="who">
+        <div class="avatar" id="avatar-initial">A</div>
+        <div>
+          <h1 id="member-name" style="font-size:20px; margin-bottom:2px;">—</h1>
+          <div class="world-tags" id="member-worlds"><span class="empty-tag">Sin mundos elegidos aún</span></div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px;">
+        <div class="level-badge">
+          <span class="lvl-name" id="member-nivel">—</span>
+          <span class="lvl-pts" id="member-puntos">0 pts</span>
+        </div>
+        <div style="font-size:12.5px; color:var(--ink-soft);">Miembro desde <span id="member-since">—</span></div>
+      </div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="card wide" id="card-mundos">
+        <h2><span class="dot"></span>Tus mundos de interés</h2>
+        <p class="mundos-note">Elige los mundos que más te interesan — no son categorías cerradas, se conectan entre sí dentro del ecosistema ALL. Puedes marcar varios a la vez y cambiarlos cuando quieras.</p>
+        <div class="mundos-grid" id="mundos-grid"></div>
+        <div class="mundos-actions">
+          <button id="btn-guardar-mundos" class="btn btn-primary" type="button">Guardar mundos</button>
+          <span class="mundos-msg" id="mundos-msg"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>Cursos y talleres</h2>
+        <div id="cursos-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>Pedidos y compras</h2>
+        <div id="pedidos-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>Tus premios</h2>
+        <div id="premios-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card wide">
+        <h2><span class="dot"></span>Contenido exclusivo de tus mundos</h2>
+        <div id="contenido-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card wide">
+        <h2><span class="dot"></span>Promociones para ti</h2>
+        <div id="promociones-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card wide" id="card-obras">
+        <h2><span class="dot"></span>Tu portafolio (obras)</h2>
+        <p class="mundos-note">Estas son las obras que se muestran en tu perfil público, si lo tienes activado (botón "Mi perfil público" arriba).</p>
+        <div class="obras-grid" id="obras-grid"></div>
+        <div class="obra-form">
+          <input type="text" id="obra-titulo" placeholder="Título de la obra">
+          <select id="obra-mundo">
+            <option value="">Mundo (opcional)</option>
+            <option value="ALLtaller">ALLtaller</option>
+            <option value="ALLytectura">ALLytectura</option>
+            <option value="ALLaventura">ALLaventura</option>
+            <option value="ALLquimia">ALLquimia</option>
+            <option value="ALLegado">ALLegado</option>
+          </select>
+          <input type="text" id="obra-imagen" class="full" placeholder="URL de la imagen (opcional)">
+          <textarea id="obra-descripcion" class="full" rows="2" placeholder="Descripción breve"></textarea>
+          <div class="full">
+            <button id="btn-agregar-obra" class="btn btn-ghost" type="button">+ Agregar obra al portafolio</button>
+            <span class="mundos-msg" id="obra-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card wide" id="card-productos">
+        <h2><span class="dot"></span>Mis productos</h2>
+        <p class="mundos-note">Publica lo que quieras vender en el catálogo del sitio — cursos, obras, herramientas y materiales o proyectos. Antes de aparecer en la página principal, el equipo de CREALLAB revisa y aprueba cada producto.</p>
+        <div id="productos-list"><p class="empty">Aún no publicas productos.</p></div>
+        <div class="producto-form">
+          <input type="text" id="prod-nombre" placeholder="Nombre del producto">
+          <select id="prod-categoria">
+            <option value="CURSOS">Cursos</option>
+            <option value="OBRAS">Obras</option>
+            <option value="HERRAMIENTAS Y MATERIALES">Herramientas y materiales</option>
+            <option value="PROYECTOS">Proyectos</option>
+          </select>
+          <input type="text" id="prod-tipo" placeholder="Tipo (ej. Taller online, Tejido, Prensa…)">
+          <select id="prod-mundo">
+            <option value="">Mundo (opcional)</option>
+            <option value="ALLtaller">ALLtaller</option>
+            <option value="ALLytectura">ALLytectura</option>
+            <option value="ALLaventura">ALLaventura</option>
+            <option value="ALLquimia">ALLquimia</option>
+            <option value="ALLegado">ALLegado</option>
+          </select>
+          <input type="number" id="prod-precio" min="0" step="0.01" placeholder="Precio (S/)">
+          <input type="text" id="prod-formato" placeholder="Formato (ej. Digital, Físico, Pieza única…)">
+          <input type="text" id="prod-imagen" class="full" placeholder="URL de la imagen (opcional)">
+          <textarea id="prod-descripcion" class="full" rows="2" placeholder="Descripción breve"></textarea>
+          <div class="full">
+            <button id="btn-publicar-producto" class="btn btn-ghost" type="button">+ Publicar producto (para revisión)</button>
+            <span class="mundos-msg" id="producto-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card wide" id="card-ventas">
+        <h2><span class="dot"></span>Mis ventas</h2>
+        <p class="mundos-note">Cuando cierres una venta por WhatsApp, repórtala aquí. El equipo de CREALLAB la confirma y ahí queda el reparto: <strong>70/30 en cursos</strong> y <strong>90/10 en obras, herramientas y materiales, y proyectos</strong> — la parte mayor siempre es tuya.</p>
+        <div id="ventas-list"><p class="empty">Aún no reportas ventas.</p></div>
+        <div class="producto-form">
+          <select id="venta-producto" class="full">
+            <option value="">Selecciona el producto vendido…</option>
+          </select>
+          <input type="number" id="venta-monto" min="0" step="0.01" placeholder="Monto vendido (S/)">
+          <select id="venta-medio">
+            <option value="whatsapp">Pagó por WhatsApp / directo</option>
+            <option value="mercadopago">Pagó con Mercado Pago</option>
+          </select>
+          <input type="text" id="venta-comprador" class="full" placeholder="Comprador (opcional)">
+          <textarea id="venta-notas" class="full" rows="2" placeholder="Notas (opcional)"></textarea>
+          <div class="full">
+            <button id="btn-reportar-venta" class="btn btn-ghost" type="button">+ Reportar venta</button>
+            <span class="mundos-msg" id="venta-msg"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card wide" id="card-mensajes">
+        <h2><span class="dot"></span>Mensajes de compradores</h2>
+        <p class="mundos-note">Cuando alguien te escriba desde el catálogo (con o sin foto de comprobante), la conversación aparece aquí — solo la ven ustedes dos.</p>
+        <div id="conversaciones-list"><p class="empty">Aún no tienes conversaciones.</p></div>
+      </div>
+
+      <div class="card wide" id="card-mis-compras">
+        <h2><span class="dot"></span>Mis conversaciones</h2>
+        <p class="mundos-note">Si le escribiste a algún artista desde el catálogo estando en tu cuenta, esa conversación queda guardada aquí — sin depender del navegador que uses.</p>
+        <div id="mis-conversaciones-list"><p class="empty">Aún no le escribiste a ningún artista.</p></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ============ VENTANA: MI PERFIL PÚBLICO ============ -->
+<div id="modal-perfil" class="modal-overlay hidden">
+  <div class="modal-card" style="text-align:left; max-width:460px; position:relative; padding:0; overflow:hidden;">
+    <button id="modal-cerrar" class="modal-close" type="button" aria-label="Cerrar">&times;</button>
+
+    <div class="perfil-editor-cover" id="preview-portada">
+      <label class="cover-upload-btn" for="input-portada">Cambiar portada</label>
+      <input type="file" id="input-portada" accept="image/*" class="hidden">
+    </div>
+    <div class="perfil-editor-avatar-wrap">
+      <div class="perfil-editor-avatar" id="preview-avatar">
+        <span id="avatar-fallback-letter">A</span>
+        <label class="avatar-upload-btn" for="input-avatar" title="Cambiar foto de perfil">📷</label>
+        <input type="file" id="input-avatar" accept="image/*" class="hidden">
+      </div>
+    </div>
+
+    <div style="padding:6px 26px 28px;">
+      <div style="text-align:center; margin-bottom:6px;">
+        <h2 style="font-size:19px;">Tu perfil público</h2>
+        <p style="font-size:13px;">Actívalo para que otros usuarios y visitantes vean tus obras, cursos completados, premios y nivel — nunca tus pedidos ni tu correo.</p>
+      </div>
+
+      <div class="toggle-row">
+        <div>
+          <strong style="font-size:13.5px;">Mostrar mi perfil a otros usuarios y visitantes</strong>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="toggle-publico">
+          <span class="track"></span>
+        </label>
+      </div>
+
+      <div class="field-inline">
+        <label for="input-handle">Tu usuario (para tu enlace público)</label>
+        <input type="text" id="input-handle" placeholder="ej. alvaro-anampa">
+      </div>
+      <div class="field-inline">
+        <label for="input-bio">Bio corta</label>
+        <textarea id="input-bio" rows="2" placeholder="Una frase sobre ti y tu trabajo…"></textarea>
+      </div>
+      <div class="mundos-actions">
+        <button id="btn-guardar-perfil" class="btn btn-primary" type="button">Guardar perfil público</button>
+        <span class="mundos-msg" id="perfil-msg"></span>
+      </div>
+      <p class="public-link" id="public-link-wrap"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const viewLogin = $("#view-login");
+  const viewDash  = $("#view-dashboard");
+  const btnLogout = $("#btn-logout");
+  const demoBanner = $("#demo-banner");
+  const authMsg = $("#auth-msg");
+  const form = $("#form-auth");
+  const btnSubmit = $("#btn-submit");
+  const tabSignin = $("#tab-signin");
+  const tabSignup = $("#tab-signup");
+  let mode = "signin";
+  let currentUser = null; // solo se usa en modo real (Supabase)
+  let currentProfile = null; // solo se usa en modo real (Supabase)
+
+  const WORLDS = [
+    { key:"ALLtaller",   nombre:"ALLtaller",   desc:"Cursos, talleres y clases en vivo." },
+    { key:"ALLytectura", nombre:"ALLytectura", desc:"Diseño, arquitectura y construcción artesanal." },
+    { key:"ALLaventura", nombre:"ALLaventura", desc:"Viajes y experiencias en la naturaleza." },
+    { key:"ALLquimia",   nombre:"ALLquimia",   desc:"Experimentación, materiales y procesos." },
+    { key:"ALLegado",    nombre:"ALLegado",    desc:"Eventos, memoria y comunidad cultural." },
+  ];
+
+  // ---------- datos de ejemplo (modo demo, sin Supabase conectado) ----------
+  const MOCK = {
+    profile: { nombre:"Miembro Ejemplo", fecha_ingreso:"2026-03-14", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:false },
+    mundos: ["ALLtaller", "ALLquimia"],
+    puntos: 65, nivel: "Oficial",
+    cursos: [
+      { nombre_curso:"Grabado en linóleo — nivel 1", progreso_pct:80 },
+      { nombre_curso:"Kirigami aplicado a producto", progreso_pct:35 },
+    ],
+    pedidos: [
+      { producto:"Chuspa tejida — edición roja", estado:"enviado", fecha:"2026-07-02" },
+      { producto:"Kit ArteKirigami", estado:"entregado", fecha:"2026-05-18" },
+    ],
+    premios: [
+      { titulo:"Primer taller completado", descripcion:"Por terminar tu primer curso en ALLtaller." },
+    ],
+    obras: [
+      { id:"o1", titulo:"Chuspa roja edición limitada", descripcion:"Tejido a mano, técnica ancestral.", imagen_url:"", mundo:"ALLtaller" },
+    ],
+    productos: [
+      { id:"pr1", nombre:"Chuspa roja edición limitada", categoria:"OBRAS", tipo:"Tejido", precio:180, estado:"aprobado" },
+    ],
+    ventas: [
+      { id:"v1", producto_nombre:"Chuspa roja edición limitada", monto:180, medio_pago:"whatsapp", comprador:"Ana R.", estado:"confirmada", comision_pct:10, comision_monto:18, monto_artista:162, liquidado:false },
+      { id:"v2", producto_nombre:"Chuspa roja edición limitada", monto:180, medio_pago:"mercadopago", comprador:"Luis T.", estado:"confirmada", comision_pct:10, comision_monto:18, monto_artista:162, liquidado:false },
+    ],
+    conversaciones: [
+      {
+        id:"c1", producto_nombre:"Chuspa roja edición limitada", comprador_nombre:"Ana R.", estado:"abierta",
+        mensajes: [
+          { autor_tipo:"comprador", texto:"Hola, ya hice el pago, acá está el comprobante.", imagen_url:"", creado_en:"2026-08-01T15:20:00" },
+          { autor_tipo:"artista", texto:"¡Recibido! En un momento te confirmo el envío.", imagen_url:"", creado_en:"2026-08-01T15:24:00" },
+        ],
+      },
+    ],
+    misConversaciones: [
+      {
+        id:"m1", producto_nombre:"Prensa CHUSPA Mini", estado:"abierta",
+        mensajes: [
+          { autor_tipo:"comprador", texto:"Hola, ya pagué la prensa, va el comprobante.", imagen_url:"", creado_en:"2026-08-02T10:10:00" },
+        ],
+      },
+    ],
+    contenido: [
+      { titulo:"Guía: preparación de matriz para grabado", descripcion:"PDF descargable con el paso a paso.", tipo:"contenido" },
+      { titulo:"Sesión grabada: taller en vivo de julio", descripcion:"Video, 46 min.", tipo:"contenido" },
+      { titulo:"20% en tu próximo taller de ALLquimia", descripcion:"Válido este mes para miembros interesados en este mundo.", tipo:"promocion" },
+    ],
+  };
+
+  function showMsg(text, kind){
+    authMsg.innerHTML = text ? `<div class="msg ${kind}">${text}</div>` : "";
+  }
+
+  function setTab(next){
+    mode = next;
+    tabSignin.classList.toggle("active", mode === "signin");
+    tabSignup.classList.toggle("active", mode === "signup");
+    btnSubmit.textContent = mode === "signin" ? "Iniciar sesión" : "Crear cuenta";
+    showMsg("", "");
+  }
+  tabSignin.addEventListener("click", () => setTab("signin"));
+  tabSignup.addEventListener("click", () => setTab("signup"));
+
+  function renderCursos(list){
+    const el = $("#cursos-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Aún no tienes cursos o talleres activos.</p>'; return; }
+    el.innerHTML = list.map(c => `
+      <div class="row-item" style="display:block;">
+        <div style="display:flex; justify-content:space-between;"><span>${c.nombre_curso}</span><span>${c.progreso_pct}%</span></div>
+        <div class="progress-bar"><span style="width:${c.progreso_pct}%;"></span></div>
+      </div>`).join("");
+  }
+
+  function renderPedidos(list){
+    const el = $("#pedidos-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Todavía no registras pedidos.</p>'; return; }
+    el.innerHTML = list.map(p => `
+      <div class="row-item">
+        <span>${p.producto}</span>
+        <span class="pill ${p.estado.replace(/\s+/g,'').toLowerCase()}">${p.estado}</span>
+      </div>`).join("");
+  }
+
+  function renderListaTipo(selector, list, vacio){
+    const el = $(selector);
+    if(!list || !list.length){ el.innerHTML = `<p class="empty">${vacio}</p>`; return; }
+    el.innerHTML = list.map(c => `
+      <div class="row-item" style="display:block;">
+        <strong style="font-size:13.5px;">${c.titulo}</strong>
+        <p style="margin:2px 0 0; font-size:12.5px;">${c.descripcion || ""}</p>
+      </div>`).join("");
+  }
+
+  function renderContenido(list){
+    const todos = list || [];
+    renderListaTipo("#contenido-list", todos.filter(c => (c.tipo || "contenido") === "contenido"), "Pronto habrá contenido exclusivo para tus mundos.");
+    renderListaTipo("#promociones-list", todos.filter(c => c.tipo === "promocion"), "No hay promociones activas para tus mundos por ahora.");
+  }
+
+  function renderStats(puntos, nivel){
+    $("#member-nivel").textContent = nivel || "Aprendiz";
+    $("#member-puntos").textContent = (puntos || 0) + " pts";
+  }
+
+  function renderPremios(list){
+    const el = $("#premios-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Todavía no tienes premios — ¡van llegando con tu participación!</p>'; return; }
+    el.innerHTML = list.map(p => `
+      <div class="premio-item">
+        <div class="premio-icon">★</div>
+        <div>
+          <strong style="font-size:13px; display:block;">${p.titulo}</strong>
+          <span style="font-size:11.5px; color:var(--ink-soft);">${p.descripcion || ""}</span>
+        </div>
+      </div>`).join("");
+  }
+
+  function renderObras(list){
+    const el = $("#obras-grid");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Aún no agregas obras a tu portafolio.</p>'; return; }
+    el.innerHTML = list.map(o => `
+      <div class="obra-card" data-id="${o.id}">
+        ${o.imagen_url ? `<img src="${o.imagen_url}" alt="${o.titulo}">` : `<div style="height:100px; background:var(--paper-2);"></div>`}
+        <div class="oc-body">
+          <strong>${o.titulo}</strong>
+          <button class="oc-del" data-id="${o.id}" type="button">Quitar</button>
+        </div>
+      </div>`).join("");
+  }
+
+  function money(n){
+    return "S/ " + Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function renderProductos(list){
+    const el = $("#productos-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Aún no publicas productos.</p>'; return; }
+    el.innerHTML = list.map(p => `
+      <div class="producto-item" data-id="${p.id}">
+        <div class="producto-item-top">
+          <strong>${p.nombre}</strong>
+          <span class="pill ${p.estado}">${p.estado}</span>
+        </div>
+        <div class="producto-item-meta">${p.categoria}${p.tipo ? " · " + p.tipo : ""} · ${money(p.precio)}</div>
+        <button class="producto-del" data-id="${p.id}" type="button">Quitar</button>
+      </div>`).join("");
+  }
+
+  function comisionPctPara(categoria){
+    return categoria === "CURSOS" ? 30 : 10;
+  }
+
+  function renderVentaProductoOptions(productos){
+    const el = $("#venta-producto");
+    const aprobados = (productos || []).filter(p => p.estado === "aprobado");
+    if (!aprobados.length) {
+      el.innerHTML = '<option value="">Aún no tienes productos aprobados</option>';
+      return;
+    }
+    el.innerHTML = '<option value="">Selecciona el producto vendido…</option>'
+      + aprobados.map(p => `<option value="${p.id}">${p.nombre}</option>`).join("");
+  }
+
+  function renderVentas(list){
+    const el = $("#ventas-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Aún no reportas ventas.</p>'; return; }
+    el.innerHTML = list.map(v => {
+      let detalle;
+      if (v.estado === "confirmada") {
+        detalle = `Tu parte: ${money(v.monto_artista)} · Comisión CREALLAB: ${money(v.comision_monto)} (${v.comision_pct}%)`;
+        if (v.medio_pago === "mercadopago") {
+          detalle += v.liquidado ? " · ya te transfirieron tu parte ✓" : " · CREALLAB tiene el pago, pendiente de transferirte tu parte";
+        } else {
+          detalle += v.liquidado ? " · comisión ya liquidada ✓" : " · comisión pendiente de cobro";
+        }
+      } else if (v.estado === "rechazada") {
+        detalle = v.notas ? "Motivo: " + v.notas : "El equipo no pudo confirmar esta venta.";
+      } else {
+        detalle = "Esperando confirmación del equipo CREALLAB.";
+      }
+      return `
+      <div class="venta-item" data-id="${v.id}">
+        <div class="producto-item-top">
+          <strong>${v.producto_nombre || "Producto"}</strong>
+          <span class="pill ${v.estado}">${v.estado}</span>
+        </div>
+        <div class="producto-item-meta">Vendido en ${money(v.monto)}${v.comprador ? " · " + v.comprador : ""}</div>
+        <div class="venta-split">${detalle}</div>
+        ${v.estado === "pendiente" ? `<button class="venta-del" data-id="${v.id}" type="button">Quitar</button>` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  function horaConv(iso){
+    try { return new Date(iso).toLocaleString("es-PE", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }); }
+    catch(e){ return ""; }
+  }
+
+  function renderConvLog(el, mensajes, miTipo){
+    miTipo = miTipo || "artista";
+    el.innerHTML = (mensajes || []).map(m => {
+      const mio = m.autor_tipo === miTipo;
+      const img = m.imagen_url ? `<img src="${m.imagen_url}" alt="Comprobante">` : "";
+      const texto = m.texto ? `<span>${m.texto.replace(/</g, "&lt;")}</span>` : "";
+      const quien = mio ? "Tú" : (miTipo === "artista" ? "Comprador" : "Artista");
+      return `<div class="conv-msg ${mio ? "mio" : "otro"}">${texto}${img}<span class="hora">${quien} · ${horaConv(m.creado_en)}</span></div>`;
+    }).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function renderConversaciones(list){
+    const el = $("#conversaciones-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Aún no tienes conversaciones.</p>'; return; }
+    el.innerHTML = list.map(c => `
+      <div class="conv-item" data-id="${c.id}">
+        <div class="conv-item-head" data-id="${c.id}">
+          <div>
+            <strong>${c.comprador_nombre}</strong>
+            <span>${c.producto_nombre}</span>
+          </div>
+          <span class="pill ${c.estado === 'abierta' ? 'pendiente' : 'rechazado'}">${c.estado}</span>
+        </div>
+        <div class="conv-item-body">
+          <div class="conv-item-body-inner">
+            <div class="conv-log" id="conv-log-${c.id}"></div>
+            ${c.estado === "abierta" ? `
+            <div class="conv-reply">
+              <textarea id="conv-msg-${c.id}" placeholder="Responder…"></textarea>
+              <div class="conv-reply-row">
+                <input type="file" id="conv-img-${c.id}" accept="image/*">
+                <button class="btn btn-ghost conv-enviar" data-id="${c.id}" type="button">Enviar</button>
+              </div>
+            </div>
+            <button class="conv-cerrar-btn" data-id="${c.id}" type="button">Cerrar conversación</button>
+            ` : `<p class="conv-cerrada-note">Conversación cerrada.</p>`}
+          </div>
+        </div>
+      </div>`).join("");
+  }
+
+  function renderMisConversaciones(list){
+    const el = $("#mis-conversaciones-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Aún no le escribiste a ningún artista.</p>'; return; }
+    el.innerHTML = list.map(c => `
+      <div class="conv-item" data-id="${c.id}">
+        <div class="conv-item-head mis-conv-item-head" data-id="${c.id}">
+          <div>
+            <strong>${c.producto_nombre}</strong>
+            <span>Tu conversación con el artista</span>
+          </div>
+          <span class="pill ${c.estado === 'abierta' ? 'pendiente' : 'rechazado'}">${c.estado}</span>
+        </div>
+        <div class="conv-item-body">
+          <div class="conv-item-body-inner">
+            <div class="conv-log" id="mis-conv-log-${c.id}"></div>
+            ${c.estado === "abierta" ? `
+            <div class="conv-reply">
+              <textarea id="mis-conv-msg-${c.id}" placeholder="Responder…"></textarea>
+              <div class="conv-reply-row">
+                <input type="file" id="mis-conv-img-${c.id}" accept="image/*">
+                <button class="btn btn-ghost mis-conv-enviar" data-id="${c.id}" type="button">Enviar</button>
+              </div>
+            </div>
+            ` : `<p class="conv-cerrada-note">Conversación cerrada.</p>`}
+          </div>
+        </div>
+      </div>`).join("");
+  }
+
+  // ---------- fotos de perfil / portada ----------
+  let selectedAvatarFile = null, selectedAvatarPreviewUrl = null;
+  let selectedPortadaFile = null, selectedPortadaPreviewUrl = null;
+
+  function setAvatarPreview(url, fallbackText){
+    const letterEl = $("#avatar-fallback-letter");
+    if (url) {
+      $("#preview-avatar").style.backgroundImage = `url(${url})`;
+      letterEl.style.display = "none";
+    } else {
+      $("#preview-avatar").style.backgroundImage = "";
+      letterEl.textContent = (fallbackText || "A").charAt(0).toUpperCase();
+      letterEl.style.display = "";
+    }
+  }
+  function setPortadaPreview(url){
+    $("#preview-portada").style.backgroundImage = url ? `url(${url})` : "";
+  }
+  $("#input-avatar").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedAvatarFile = file;
+    selectedAvatarPreviewUrl = URL.createObjectURL(file);
+    setAvatarPreview(selectedAvatarPreviewUrl);
+  });
+  $("#input-portada").addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    selectedPortadaFile = file;
+    selectedPortadaPreviewUrl = URL.createObjectURL(file);
+    setPortadaPreview(selectedPortadaPreviewUrl);
+  });
+
+  function renderPerfilPublicoForm(p){
+    $("#toggle-publico").checked = !!(p && p.perfil_publico);
+    $("#input-handle").value = (p && p.handle) || "";
+    $("#input-bio").value = (p && p.bio) || "";
+    selectedAvatarFile = null; selectedAvatarPreviewUrl = null;
+    selectedPortadaFile = null; selectedPortadaPreviewUrl = null;
+    setAvatarPreview(p && p.avatar_url, (p && (p.nombre || p.handle)) || "A");
+    setPortadaPreview(p && p.portada_url);
+    renderPublicLink(p);
+  }
+
+  function renderPublicLink(p){
+    const wrap = $("#public-link-wrap");
+    if (p && p.perfil_publico && p.handle) {
+      const url = `creallab-perfil.html?u=${encodeURIComponent(p.handle)}`;
+      wrap.innerHTML = `
+        <a href="${url}" target="_blank" class="btn btn-ghost public-link-btn">Ver mi perfil público ↗</a>
+        <span style="display:block; margin-top:6px; font-size:11.5px; word-break:break-all;">Se abre en una pestaña nueva — así es como lo ven otros usuarios y visitantes.</span>`;
+    } else {
+      wrap.innerHTML = "";
+    }
+  }
+
+  // ---------- ventana: mi perfil público (crear / editar) ----------
+  const modalPerfil = $("#modal-perfil");
+  const btnAbrirPerfil = $("#btn-abrir-perfil");
+  let perfilPromptDismissKey = null;
+
+  function openPerfilModal(){
+    modalPerfil.classList.remove("hidden");
+  }
+  function closePerfilModal(){
+    modalPerfil.classList.add("hidden");
+    if (perfilPromptDismissKey) localStorage.setItem(perfilPromptDismissKey, "1");
+  }
+  function maybeAutoOpenPerfilModal(profile, userKey){
+    if (profile && profile.perfil_publico) return; // ya lo activó, no molestamos
+    const key = "creallab_perfil_prompt_dismissed_" + userKey;
+    if (localStorage.getItem(key)) return; // ya dijo "ahora no" antes
+    perfilPromptDismissKey = key;
+    openPerfilModal();
+  }
+
+  btnAbrirPerfil.addEventListener("click", openPerfilModal);
+  $("#modal-cerrar").addEventListener("click", closePerfilModal);
+
+  function renderProfile(p){
+    $("#member-name").textContent = p.nombre || p.email || "Miembro CREALLAB";
+    $("#member-since").textContent = p.fecha_ingreso ? new Date(p.fecha_ingreso).toLocaleDateString("es-ES", {year:"numeric", month:"long"}) : "—";
+    const av = $("#avatar-initial");
+    if (p.avatar_url) {
+      av.style.backgroundImage = `url(${p.avatar_url})`;
+      av.style.backgroundSize = "cover";
+      av.style.backgroundPosition = "center";
+      av.textContent = "";
+    } else {
+      av.style.backgroundImage = "";
+      av.textContent = (p.nombre || p.email || "A").charAt(0).toUpperCase();
+    }
+  }
+
+  function renderMemberWorldTags(mundos){
+    const el = $("#member-worlds");
+    if(!mundos || !mundos.length){ el.innerHTML = '<span class="empty-tag">Sin mundos elegidos aún</span>'; return; }
+    el.innerHTML = mundos.map(m => `<span class="world-tag">${m}</span>`).join("");
+  }
+
+  function renderMundosPicker(seleccionados){
+    const el = $("#mundos-grid");
+    const sel = new Set(seleccionados || []);
+    el.innerHTML = WORLDS.map(w => `
+      <label class="mundo-chip ${sel.has(w.key) ? "selected" : ""}" data-key="${w.key}">
+        <input type="checkbox" value="${w.key}" ${sel.has(w.key) ? "checked" : ""}>
+        <span>
+          <span class="mc-name">${w.nombre}</span>
+          <span class="mc-desc">${w.desc}</span>
+        </span>
+      </label>`).join("");
+    el.querySelectorAll(".mundo-chip input").forEach(input => {
+      input.addEventListener("change", () => {
+        input.closest(".mundo-chip").classList.toggle("selected", input.checked);
+      });
+    });
+  }
+
+  function selectedMundos(){
+    return Array.from(document.querySelectorAll("#mundos-grid input:checked")).map(el => el.value);
+  }
+
+  function showDashboard(){
+    viewLogin.classList.add("hidden");
+    viewDash.classList.remove("hidden");
+    btnLogout.classList.remove("hidden");
+    btnAbrirPerfil.classList.remove("hidden");
+  }
+  function showLogin(){
+    viewDash.classList.add("hidden");
+    viewLogin.classList.remove("hidden");
+    btnLogout.classList.add("hidden");
+    btnAbrirPerfil.classList.add("hidden");
+    modalPerfil.classList.add("hidden");
+  }
+
+  // ---------- MODO DEMO: sin Supabase conectado ----------
+  if (typeof DEMO_MODE !== "undefined" && DEMO_MODE) {
+    demoBanner.classList.remove("hidden");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      renderProfile(MOCK.profile);
+      renderMemberWorldTags(MOCK.mundos);
+      renderMundosPicker(MOCK.mundos);
+      renderStats(MOCK.puntos, MOCK.nivel);
+      renderCursos(MOCK.cursos);
+      renderPedidos(MOCK.pedidos);
+      renderPremios(MOCK.premios);
+      renderObras(MOCK.obras);
+      renderProductos(MOCK.productos);
+      renderVentaProductoOptions(MOCK.productos);
+      renderVentas(MOCK.ventas);
+      renderConversaciones(MOCK.conversaciones);
+      renderMisConversaciones(MOCK.misConversaciones);
+      renderPerfilPublicoForm(MOCK.profile);
+      renderContenido(MOCK.contenido);
+      showDashboard();
+      maybeAutoOpenPerfilModal(MOCK.profile, "demo");
+    });
+    btnLogout.addEventListener("click", showLogin);
+    $("#btn-guardar-mundos").addEventListener("click", () => {
+      MOCK.mundos = selectedMundos();
+      renderMemberWorldTags(MOCK.mundos);
+      $("#mundos-msg").textContent = "Guardado (modo demo) ✓";
+      setTimeout(() => { $("#mundos-msg").textContent = ""; }, 2500);
+    });
+    $("#btn-guardar-perfil").addEventListener("click", () => {
+      MOCK.profile.perfil_publico = $("#toggle-publico").checked;
+      MOCK.profile.handle = $("#input-handle").value.trim();
+      MOCK.profile.bio = $("#input-bio").value.trim();
+      if (selectedAvatarPreviewUrl) MOCK.profile.avatar_url = selectedAvatarPreviewUrl;
+      if (selectedPortadaPreviewUrl) MOCK.profile.portada_url = selectedPortadaPreviewUrl;
+      selectedAvatarFile = null; selectedPortadaFile = null;
+      renderProfile(MOCK.profile);
+      renderPublicLink(MOCK.profile);
+      $("#perfil-msg").textContent = "Guardado (modo demo) ✓";
+      setTimeout(() => { $("#perfil-msg").textContent = ""; }, 2500);
+    });
+    $("#btn-agregar-obra").addEventListener("click", () => {
+      const titulo = $("#obra-titulo").value.trim();
+      if (!titulo) { $("#obra-msg").textContent = "Ponle un título a la obra."; return; }
+      MOCK.obras.push({
+        id: "o" + (MOCK.obras.length + 1),
+        titulo,
+        descripcion: $("#obra-descripcion").value.trim(),
+        imagen_url: $("#obra-imagen").value.trim(),
+        mundo: $("#obra-mundo").value,
+      });
+      renderObras(MOCK.obras);
+      $("#obra-titulo").value = ""; $("#obra-descripcion").value = ""; $("#obra-imagen").value = ""; $("#obra-mundo").value = "";
+      $("#obra-msg").textContent = "Agregada (modo demo) ✓";
+      setTimeout(() => { $("#obra-msg").textContent = ""; }, 2500);
+    });
+    $("#obras-grid").addEventListener("click", (e) => {
+      if (!e.target.classList.contains("oc-del")) return;
+      MOCK.obras = MOCK.obras.filter(o => o.id !== e.target.dataset.id);
+      renderObras(MOCK.obras);
+    });
+    $("#btn-publicar-producto").addEventListener("click", () => {
+      const nombre = $("#prod-nombre").value.trim();
+      if (!nombre) { $("#producto-msg").textContent = "Ponle un nombre al producto."; return; }
+      MOCK.productos.push({
+        id: "pr" + (MOCK.productos.length + 1),
+        nombre,
+        categoria: $("#prod-categoria").value,
+        tipo: $("#prod-tipo").value.trim(),
+        mundo: $("#prod-mundo").value,
+        precio: parseFloat($("#prod-precio").value) || 0,
+        formato: $("#prod-formato").value.trim(),
+        descripcion: $("#prod-descripcion").value.trim(),
+        imagen_url: $("#prod-imagen").value.trim(),
+        estado: "pendiente",
+      });
+      renderProductos(MOCK.productos);
+      ["#prod-nombre","#prod-tipo","#prod-precio","#prod-formato","#prod-imagen","#prod-descripcion"].forEach(sel => $(sel).value = "");
+      $("#prod-mundo").value = "";
+      $("#producto-msg").textContent = "Publicado, pendiente de revisión (modo demo) ✓";
+      setTimeout(() => { $("#producto-msg").textContent = ""; }, 3000);
+    });
+    $("#productos-list").addEventListener("click", (e) => {
+      if (!e.target.classList.contains("producto-del")) return;
+      MOCK.productos = MOCK.productos.filter(p => p.id !== e.target.dataset.id);
+      renderProductos(MOCK.productos);
+      renderVentaProductoOptions(MOCK.productos);
+    });
+    $("#btn-reportar-venta").addEventListener("click", () => {
+      const productoId = $("#venta-producto").value;
+      const monto = parseFloat($("#venta-monto").value);
+      if (!productoId) { $("#venta-msg").textContent = "Elige qué producto vendiste."; return; }
+      if (!monto || monto <= 0) { $("#venta-msg").textContent = "Ingresa el monto de la venta."; return; }
+      const producto = MOCK.productos.find(p => p.id === productoId);
+      const pct = comisionPctPara(producto ? producto.categoria : "OBRAS");
+      const comision = Math.round(monto * pct) / 100;
+      MOCK.ventas.push({
+        id: "v" + (MOCK.ventas.length + 1),
+        producto_nombre: producto ? producto.nombre : "Producto",
+        monto,
+        medio_pago: $("#venta-medio").value,
+        comprador: $("#venta-comprador").value.trim(),
+        notas: $("#venta-notas").value.trim(),
+        estado: "pendiente",
+        comision_pct: pct,
+        comision_monto: comision,
+        monto_artista: monto - comision,
+        liquidado: false,
+      });
+      renderVentas(MOCK.ventas);
+      ["#venta-monto","#venta-comprador","#venta-notas"].forEach(sel => $(sel).value = "");
+      $("#venta-producto").value = ""; $("#venta-medio").value = "whatsapp";
+      $("#venta-msg").textContent = "Reportada, pendiente de confirmación (modo demo) ✓";
+      setTimeout(() => { $("#venta-msg").textContent = ""; }, 3000);
+    });
+    $("#ventas-list").addEventListener("click", (e) => {
+      if (!e.target.classList.contains("venta-del")) return;
+      MOCK.ventas = MOCK.ventas.filter(v => v.id !== e.target.dataset.id);
+      renderVentas(MOCK.ventas);
+    });
+
+    $("#conversaciones-list").addEventListener("click", (e) => {
+      const headEl = e.target.closest(".conv-item-head");
+      if (headEl) {
+        const item = headEl.closest(".conv-item");
+        const wasOpen = item.classList.contains("open");
+        document.querySelectorAll(".conv-item.open").forEach(o => o.classList.remove("open"));
+        if (!wasOpen) {
+          item.classList.add("open");
+          const conv = MOCK.conversaciones.find(c => c.id === headEl.dataset.id);
+          renderConvLog($("#conv-log-" + headEl.dataset.id), conv ? conv.mensajes : []);
+        }
+        return;
+      }
+      if (e.target.classList.contains("conv-enviar")) {
+        const id = e.target.dataset.id;
+        const conv = MOCK.conversaciones.find(c => c.id === id);
+        const texto = $("#conv-msg-" + id).value.trim();
+        const file = $("#conv-img-" + id).files[0];
+        if (!texto && !file) return;
+        conv.mensajes.push({
+          autor_tipo:"artista", texto: texto || null,
+          imagen_url: file ? URL.createObjectURL(file) : "",
+          creado_en: new Date().toISOString(),
+        });
+        $("#conv-msg-" + id).value = "";
+        renderConvLog($("#conv-log-" + id), conv.mensajes);
+        return;
+      }
+      if (e.target.classList.contains("conv-cerrar-btn")) {
+        const id = e.target.dataset.id;
+        const conv = MOCK.conversaciones.find(c => c.id === id);
+        conv.estado = "cerrada";
+        renderConversaciones(MOCK.conversaciones);
+        const item = document.querySelector(`.conv-item[data-id="${id}"]`);
+        if (item) { item.classList.add("open"); renderConvLog($("#conv-log-" + id), conv.mensajes); }
+      }
+    });
+
+    $("#mis-conversaciones-list").addEventListener("click", (e) => {
+      const headEl = e.target.closest(".mis-conv-item-head");
+      if (headEl) {
+        const item = headEl.closest(".conv-item");
+        const wasOpen = item.classList.contains("open");
+        document.querySelectorAll("#mis-conversaciones-list .conv-item.open").forEach(o => o.classList.remove("open"));
+        if (!wasOpen) {
+          item.classList.add("open");
+          const conv = MOCK.misConversaciones.find(c => c.id === headEl.dataset.id);
+          renderConvLog($("#mis-conv-log-" + headEl.dataset.id), conv ? conv.mensajes : [], "comprador");
+        }
+        return;
+      }
+      if (e.target.classList.contains("mis-conv-enviar")) {
+        const id = e.target.dataset.id;
+        const conv = MOCK.misConversaciones.find(c => c.id === id);
+        const texto = $("#mis-conv-msg-" + id).value.trim();
+        const file = $("#mis-conv-img-" + id).files[0];
+        if (!texto && !file) return;
+        conv.mensajes.push({
+          autor_tipo:"comprador", texto: texto || null,
+          imagen_url: file ? URL.createObjectURL(file) : "",
+          creado_en: new Date().toISOString(),
+        });
+        $("#mis-conv-msg-" + id).value = "";
+        renderConvLog($("#mis-conv-log-" + id), conv.mensajes, "comprador");
+      }
+    });
+    return; // no seguimos con la lógica real de Supabase
+  }
+
+  // ---------- MODO REAL: conectado a Supabase ----------
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  async function loadDashboardData(user){
+    currentUser = user;
+
+    const { data: profile } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    currentProfile = profile;
+    renderProfile(profile || { email: user.email });
+    renderPerfilPublicoForm(profile);
+
+    const { data: statsRows } = await supabase.from("member_stats").select("*").eq("member_id", user.id).single();
+    renderStats(statsRows && statsRows.puntos, statsRows && statsRows.nivel);
+
+    const { data: mundosRows } = await supabase.from("member_mundos").select("mundo").eq("member_id", user.id);
+    const mundos = (mundosRows || []).map(r => r.mundo);
+    renderMemberWorldTags(mundos);
+    renderMundosPicker(mundos);
+
+    const { data: cursos } = await supabase.from("cursos").select("*").eq("member_id", user.id);
+    renderCursos(cursos);
+
+    const { data: pedidos } = await supabase.from("pedidos").select("*").eq("member_id", user.id).order("fecha", { ascending:false });
+    renderPedidos(pedidos);
+
+    const { data: premios } = await supabase.from("premios").select("*").eq("member_id", user.id);
+    renderPremios(premios);
+
+    const { data: obras } = await supabase.from("obras").select("*").eq("member_id", user.id).order("creado_en", { ascending:false });
+    renderObras(obras);
+
+    const { data: productos } = await supabase.from("productos").select("*").eq("member_id", user.id).order("creado_en", { ascending:false });
+    renderProductos(productos);
+    renderVentaProductoOptions(productos);
+
+    const { data: ventas } = await supabase.from("ventas").select("*, productos(nombre)").eq("member_id", user.id).order("fecha_reportada", { ascending:false });
+    renderVentas((ventas || []).map(v => ({ ...v, producto_nombre: v.productos && v.productos.nombre })));
+
+    await cargarConversaciones();
+    await cargarMisConversaciones();
+
+    if (mundos.length) {
+      const { data: contenido } = await supabase.from("contenido_mundo").select("*").in("mundo", mundos);
+      renderContenido(contenido);
+    } else {
+      renderContenido([]);
+    }
+  }
+
+  async function subirImagenPerfil(file, tipo){
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${currentUser.id}/${tipo}-${Date.now()}.${ext}`;
+    const { error: uploadError } = await supabase.storage.from("perfil-imagenes").upload(path, file, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: file.type || undefined,
+    });
+    if (uploadError) throw uploadError;
+    const { data } = supabase.storage.from("perfil-imagenes").getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  $("#btn-guardar-perfil").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#perfil-msg");
+    const handle = $("#input-handle").value.trim();
+    const bio = $("#input-bio").value.trim();
+    const perfil_publico = $("#toggle-publico").checked;
+
+    if (perfil_publico && !handle) {
+      msgEl.textContent = "Ponle un usuario antes de hacer tu perfil público.";
+      return;
+    }
+
+    msgEl.textContent = "Guardando…";
+    const updates = { handle: handle || null, bio, perfil_publico };
+
+    try {
+      if (selectedAvatarFile) updates.avatar_url = await subirImagenPerfil(selectedAvatarFile, "avatar");
+      if (selectedPortadaFile) updates.portada_url = await subirImagenPerfil(selectedPortadaFile, "portada");
+    } catch (err) {
+      msgEl.textContent = "No se pudo subir la imagen: " + err.message;
+      return;
+    }
+
+    const { error } = await supabase.from("profiles")
+      .update(updates)
+      .eq("id", currentUser.id);
+
+    if (error) {
+      msgEl.textContent = error.message.includes("duplicate")
+        ? "Ese usuario ya está en uso, elige otro."
+        : "Error al guardar: " + error.message;
+      return;
+    }
+
+    selectedAvatarFile = null;
+    selectedPortadaFile = null;
+    currentProfile = { ...(currentProfile || {}), ...updates };
+    renderProfile(currentProfile);
+    renderPublicLink({ handle, perfil_publico });
+    msgEl.textContent = "Guardado ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 2500);
+  });
+
+  $("#btn-agregar-obra").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#obra-msg");
+    const titulo = $("#obra-titulo").value.trim();
+    if (!titulo) { msgEl.textContent = "Ponle un título a la obra."; return; }
+
+    const { error } = await supabase.from("obras").insert({
+      member_id: currentUser.id,
+      titulo,
+      descripcion: $("#obra-descripcion").value.trim(),
+      imagen_url: $("#obra-imagen").value.trim() || null,
+      mundo: $("#obra-mundo").value || null,
+    });
+    if (error) { msgEl.textContent = "Error: " + error.message; return; }
+
+    $("#obra-titulo").value = ""; $("#obra-descripcion").value = ""; $("#obra-imagen").value = ""; $("#obra-mundo").value = "";
+    const { data: obras } = await supabase.from("obras").select("*").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
+    renderObras(obras);
+    msgEl.textContent = "Agregada ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 2500);
+  });
+
+  $("#obras-grid").addEventListener("click", async (e) => {
+    if (!e.target.classList.contains("oc-del") || !currentUser) return;
+    await supabase.from("obras").delete().eq("id", e.target.dataset.id).eq("member_id", currentUser.id);
+    const { data: obras } = await supabase.from("obras").select("*").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
+    renderObras(obras);
+  });
+
+  $("#btn-publicar-producto").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#producto-msg");
+    const nombre = $("#prod-nombre").value.trim();
+    if (!nombre) { msgEl.textContent = "Ponle un nombre al producto."; return; }
+
+    const { error } = await supabase.from("productos").insert({
+      member_id: currentUser.id,
+      nombre,
+      categoria: $("#prod-categoria").value,
+      tipo: $("#prod-tipo").value.trim() || null,
+      mundo: $("#prod-mundo").value || null,
+      precio: parseFloat($("#prod-precio").value) || 0,
+      formato: $("#prod-formato").value.trim() || null,
+      descripcion: $("#prod-descripcion").value.trim() || null,
+      imagen_url: $("#prod-imagen").value.trim() || null,
+    });
+    if (error) { msgEl.textContent = "Error: " + error.message; return; }
+
+    ["#prod-nombre","#prod-tipo","#prod-precio","#prod-formato","#prod-imagen","#prod-descripcion"].forEach(sel => $(sel).value = "");
+    $("#prod-mundo").value = "";
+    const { data: productos } = await supabase.from("productos").select("*").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
+    renderProductos(productos);
+    renderVentaProductoOptions(productos);
+    msgEl.textContent = "Publicado, pendiente de revisión ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+  });
+
+  $("#productos-list").addEventListener("click", async (e) => {
+    if (!e.target.classList.contains("producto-del") || !currentUser) return;
+    await supabase.from("productos").delete().eq("id", e.target.dataset.id).eq("member_id", currentUser.id);
+    const { data: productos } = await supabase.from("productos").select("*").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
+    renderProductos(productos);
+    renderVentaProductoOptions(productos);
+  });
+
+  async function cargarVentas(){
+    const { data: ventas } = await supabase.from("ventas").select("*, productos(nombre)").eq("member_id", currentUser.id).order("fecha_reportada", { ascending:false });
+    renderVentas((ventas || []).map(v => ({ ...v, producto_nombre: v.productos && v.productos.nombre })));
+  }
+
+  $("#btn-reportar-venta").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#venta-msg");
+    const productoId = $("#venta-producto").value;
+    const monto = parseFloat($("#venta-monto").value);
+    if (!productoId) { msgEl.textContent = "Elige qué producto vendiste."; return; }
+    if (!monto || monto <= 0) { msgEl.textContent = "Ingresa el monto de la venta."; return; }
+
+    const { error } = await supabase.from("ventas").insert({
+      member_id: currentUser.id,
+      producto_id: productoId,
+      monto,
+      medio_pago: $("#venta-medio").value,
+      comprador: $("#venta-comprador").value.trim() || null,
+      notas: $("#venta-notas").value.trim() || null,
+    });
+    if (error) { msgEl.textContent = "Error: " + error.message; return; }
+
+    ["#venta-monto","#venta-comprador","#venta-notas"].forEach(sel => $(sel).value = "");
+    $("#venta-producto").value = ""; $("#venta-medio").value = "whatsapp";
+    await cargarVentas();
+    msgEl.textContent = "Reportada, pendiente de confirmación ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+  });
+
+  $("#ventas-list").addEventListener("click", async (e) => {
+    if (!e.target.classList.contains("venta-del") || !currentUser) return;
+    await supabase.from("ventas").delete().eq("id", e.target.dataset.id).eq("member_id", currentUser.id);
+    await cargarVentas();
+  });
+
+  // ---------- mensajes de compradores ----------
+  const comprobanteUrlCache = new Map();
+  let convAbiertaId = null;
+  let convPollTimer = null;
+
+  async function cargarConversaciones(){
+    const { data } = await supabase.from("conversaciones").select("*, productos(nombre)").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
+    renderConversaciones((data || []).map(c => ({ ...c, producto_nombre: c.productos && c.productos.nombre })));
+  }
+
+  async function firmarComprobante(path){
+    if (!path) return "";
+    const cached = comprobanteUrlCache.get(path);
+    if (cached && cached.exp > Date.now()) return cached.url;
+    const { data, error } = await supabase.storage.from("comprobantes").createSignedUrl(path, 3600);
+    if (error || !data) return "";
+    comprobanteUrlCache.set(path, { url: data.signedUrl, exp: Date.now() + 55 * 60 * 1000 });
+    return data.signedUrl;
+  }
+
+  async function subirComprobante(file, idConv){
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${idConv}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("comprobantes").upload(path, file, { cacheControl:"3600", upsert:false, contentType: file.type || undefined });
+    if (error) throw error;
+    return path;
+  }
+
+  async function pintarLogConversacion(id){
+    const el = $("#conv-log-" + id);
+    if (!el) return;
+    const { data: mensajes } = await supabase.from("mensajes").select("*").eq("conversacion_id", id).order("creado_en", { ascending:true });
+    const conImagenes = await Promise.all((mensajes || []).map(async m => ({ ...m, imagen_url: await firmarComprobante(m.imagen_path) })));
+    renderConvLog(el, conImagenes);
+  }
+
+  $("#conversaciones-list").addEventListener("click", async (e) => {
+    const headEl = e.target.closest(".conv-item-head");
+    if (headEl) {
+      const id = headEl.dataset.id;
+      const item = headEl.closest(".conv-item");
+      const wasOpen = item.classList.contains("open");
+      document.querySelectorAll(".conv-item.open").forEach(o => o.classList.remove("open"));
+      if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
+      convAbiertaId = null;
+      if (!wasOpen) {
+        item.classList.add("open");
+        convAbiertaId = id;
+        await pintarLogConversacion(id);
+        convPollTimer = setInterval(() => pintarLogConversacion(id), 4000);
+      }
+      return;
+    }
+    if (e.target.classList.contains("conv-enviar")) {
+      const id = e.target.dataset.id;
+      const textEl = $("#conv-msg-" + id);
+      const fileEl = $("#conv-img-" + id);
+      const texto = textEl.value.trim();
+      const file = fileEl.files[0];
+      if (!texto && !file) return;
+      try {
+        let imagenPath = null;
+        if (file) imagenPath = await subirComprobante(file, id);
+        const { error } = await supabase.from("mensajes").insert({ conversacion_id: id, texto: texto || null, imagen_path: imagenPath });
+        if (error) throw error;
+        textEl.value = ""; fileEl.value = "";
+        await pintarLogConversacion(id);
+      } catch (err) {
+        alert("No se pudo enviar: " + err.message);
+      }
+      return;
+    }
+    if (e.target.classList.contains("conv-cerrar-btn")) {
+      const id = e.target.dataset.id;
+      await supabase.from("conversaciones").update({ estado:"cerrada" }).eq("id", id).eq("member_id", currentUser.id);
+      if (convPollTimer) { clearInterval(convPollTimer); convPollTimer = null; }
+      await cargarConversaciones();
+    }
+  });
+
+  // ---------- mis conversaciones (como comprador) ----------
+  let misConvAbiertaId = null;
+  let misConvPollTimer = null;
+
+  async function cargarMisConversaciones(){
+    const { data } = await supabase.from("conversaciones").select("*, productos(nombre)").eq("comprador_uid", currentUser.id).order("creado_en", { ascending:false });
+    renderMisConversaciones((data || []).map(c => ({ ...c, producto_nombre: c.productos && c.productos.nombre })));
+  }
+
+  async function pintarLogMiConversacion(id){
+    const el = $("#mis-conv-log-" + id);
+    if (!el) return;
+    const { data: mensajes } = await supabase.from("mensajes").select("*").eq("conversacion_id", id).order("creado_en", { ascending:true });
+    const conImagenes = await Promise.all((mensajes || []).map(async m => ({ ...m, imagen_url: await firmarComprobante(m.imagen_path) })));
+    renderConvLog(el, conImagenes, "comprador");
+  }
+
+  $("#mis-conversaciones-list").addEventListener("click", async (e) => {
+    const headEl = e.target.closest(".mis-conv-item-head");
+    if (headEl) {
+      const id = headEl.dataset.id;
+      const item = headEl.closest(".conv-item");
+      const wasOpen = item.classList.contains("open");
+      document.querySelectorAll("#mis-conversaciones-list .conv-item.open").forEach(o => o.classList.remove("open"));
+      if (misConvPollTimer) { clearInterval(misConvPollTimer); misConvPollTimer = null; }
+      misConvAbiertaId = null;
+      if (!wasOpen) {
+        item.classList.add("open");
+        misConvAbiertaId = id;
+        await pintarLogMiConversacion(id);
+        misConvPollTimer = setInterval(() => pintarLogMiConversacion(id), 4000);
+      }
+      return;
+    }
+    if (e.target.classList.contains("mis-conv-enviar")) {
+      const id = e.target.dataset.id;
+      const textEl = $("#mis-conv-msg-" + id);
+      const fileEl = $("#mis-conv-img-" + id);
+      const texto = textEl.value.trim();
+      const file = fileEl.files[0];
+      if (!texto && !file) return;
+      try {
+        let imagenPath = null;
+        if (file) imagenPath = await subirComprobante(file, id);
+        const { error } = await supabase.from("mensajes").insert({ conversacion_id: id, texto: texto || null, imagen_path: imagenPath });
+        if (error) throw error;
+        textEl.value = ""; fileEl.value = "";
+        await pintarLogMiConversacion(id);
+      } catch (err) {
+        alert("No se pudo enviar: " + err.message);
+      }
+    }
+  });
+
+  $("#btn-guardar-mundos").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#mundos-msg");
+    const selected = selectedMundos();
+    msgEl.textContent = "Guardando…";
+
+    await supabase.from("member_mundos").delete().eq("member_id", currentUser.id);
+    if (selected.length) {
+      const { error } = await supabase.from("member_mundos")
+        .insert(selected.map(m => ({ member_id: currentUser.id, mundo: m })));
+      if (error) { msgEl.textContent = "Error al guardar: " + error.message; return; }
+    }
+
+    renderMemberWorldTags(selected);
+    const { data: contenido } = selected.length
+      ? await supabase.from("contenido_mundo").select("*").in("mundo", selected)
+      : { data: [] };
+    renderContenido(contenido);
+
+    msgEl.textContent = "Guardado ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 2500);
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    btnSubmit.disabled = true;
+    showMsg("", "");
+    const email = $("#email").value.trim();
+    const password = $("#password").value;
+
+    const { data, error } = mode === "signin"
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : await supabase.auth.signUp({ email, password });
+
+    btnSubmit.disabled = false;
+
+    if (error) { showMsg(error.message, "error"); return; }
+
+    if (mode === "signup" && !data.session) {
+      showMsg("Cuenta creada. Revisa tu correo para confirmar y luego inicia sesión.", "ok");
+      setTab("signin");
+      return;
+    }
+    if (data.user) {
+      try {
+        await loadDashboardData(data.user);
+        showDashboard();
+        maybeAutoOpenPerfilModal(currentProfile, data.user.id);
+      } catch (err) {
+        showMsg("No se pudo cargar tu cuenta: " + err.message, "error");
+      }
+    }
+  });
+
+  btnLogout.addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    showLogin();
+  });
+
+  // sesión activa al cargar la página
+  supabase.auth.getSession().then(({ data: { session } }) => {
+    if (session && session.user) {
+      loadDashboardData(session.user).then(() => {
+        showDashboard();
+        maybeAutoOpenPerfilModal(currentProfile, session.user.id);
+      }).catch(err => {
+        showMsg("No se pudo cargar tu cuenta: " + err.message, "error");
+      });
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

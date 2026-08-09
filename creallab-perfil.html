@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfil — CREALLAB</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D0D0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CREALLAB">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:      #FFFFFF;
+    --paper-2:    #EDEDED;
+    --ink:        #121212;
+    --ink-soft:   #5A5A5A;
+    --clay:       #D7222A;
+    --night:      #0D0D0D;
+    --line:       rgba(17,17,17,0.14);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);}
+  p{margin:0 0 1em; color:var(--ink-soft);}
+  h1,h2{font-family:var(--serif); margin:0 0 .4em; font-weight:600;}
+  a{color:inherit;}
+  .container{max-width:820px; margin:0 auto; padding:0 24px;}
+
+  header{border-bottom:1px solid var(--line); padding:16px 0;}
+  .brand-name{font-family:var(--serif); font-weight:600; font-size:20px;}
+  .brand-name .all{color:var(--clay);}
+
+  /* ---------- portada + cabecera de perfil (estilo red social) ---------- */
+  .cover{
+    height:130px;
+    background:
+      repeating-linear-gradient(115deg, rgba(255,255,255,0.06) 0 38px, transparent 38px 76px),
+      linear-gradient(135deg, var(--night) 0%, #2a2a2a 100%);
+  }
+  .profile-head{text-align:center; margin-top:-48px; padding-bottom:8px;}
+  .avatar-lg{
+    width:92px; height:92px; border-radius:50%; background:var(--night); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-size:32px;
+    border:4px solid #fff; margin:0 auto 12px; box-shadow:0 6px 16px rgba(0,0,0,0.15);
+  }
+  #member-name{font-size:22px; margin-bottom:4px;}
+  .bio{font-size:13.5px; max-width:460px; margin:0 auto 10px;}
+  .world-tags{display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top:2px;}
+  .world-tag{
+    font-size:11px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--clay);
+    background:rgba(215,34,42,0.08); padding:4px 10px; border-radius:999px;
+  }
+  .level-badge{
+    display:inline-flex; align-items:center; gap:8px; padding:8px 14px;
+    border:1px solid var(--line); border-radius:12px; background:var(--paper-2); margin-top:12px;
+  }
+  .level-badge .lvl-name{font-family:var(--serif); font-weight:600; font-size:15px;}
+  .level-badge .lvl-pts{font-size:11.5px; color:var(--ink-soft);}
+
+  .stats-row{
+    display:flex; justify-content:center; gap:38px;
+    margin:20px 0 0; padding-top:16px; border-top:1px solid var(--line);
+  }
+  .stat{text-align:center;}
+  .stat strong{display:block; font-family:var(--serif); font-size:20px; font-weight:600;}
+  .stat span{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft);}
+
+  /* ---------- pestañas ---------- */
+  .tab-row{
+    display:flex; gap:4px; background:var(--paper-2); border-radius:999px; padding:4px;
+    margin:26px auto 20px; max-width:420px;
+  }
+  .tab-row button{
+    flex:1; border:none; background:transparent; padding:9px 10px; border-radius:999px;
+    font-family:var(--sans); font-weight:600; font-size:12.5px; cursor:pointer; color:var(--ink-soft);
+  }
+  .tab-row button.active{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.1);}
+
+  .sections{padding:0 0 70px;}
+  .card{border:1px solid var(--line); border-radius:14px; padding:20px; background:#fff;}
+  .empty{font-size:13px; color:var(--ink-soft); font-style:italic;}
+  .tab-panel.hidden{display:none;}
+
+  /* ---------- portafolio: cuadrícula estilo red social ---------- */
+  .obras-grid{display:grid; grid-template-columns:repeat(3, 1fr); gap:3px;}
+  @media (min-width:600px){ .obras-grid{grid-template-columns:repeat(4, 1fr); gap:6px;} }
+  .obra-card{position:relative; aspect-ratio:1/1; overflow:hidden; border-radius:4px; background:var(--paper-2);}
+  .obra-card img{width:100%; height:100%; object-fit:cover; display:block;}
+  .obra-card .oc-overlay{
+    position:absolute; inset:0; display:flex; align-items:flex-end; padding:10px;
+    background:linear-gradient(to top, rgba(0,0,0,0.75), transparent 55%);
+    opacity:0; transition:opacity .15s;
+  }
+  .obra-card:hover .oc-overlay{opacity:1;}
+  .obra-card .oc-overlay strong{color:#fff; font-size:11.5px; font-weight:600;}
+  .obra-card.noimg{display:flex; align-items:center; justify-content:center; padding:10px; text-align:center; border:1px solid var(--line);}
+  .obra-card.noimg strong{font-size:11.5px; color:var(--ink);}
+
+  .row-item{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px;}
+  .row-item:last-child{border-bottom:none;}
+
+  .producto-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);}
+  .producto-row:last-child{border-bottom:none;}
+  .producto-row-info strong{display:block; font-size:13.5px;}
+  .producto-row-info span{font-size:11.5px; color:var(--ink-soft);}
+  .producto-row-right{display:flex; align-items:center; gap:12px; flex-shrink:0;}
+  .producto-precio{font-size:13px; font-weight:700; color:var(--clay); white-space:nowrap;}
+  .producto-wa-btn{
+    display:inline-flex; align-items:center; gap:6px; background:var(--whatsapp, #2FA84F); color:#fff;
+    font-family:var(--sans); font-weight:700; font-size:11.5px; padding:7px 12px; border-radius:999px; text-decoration:none; white-space:nowrap;
+  }
+  .producto-wa-btn:hover{background:#268f42;}
+  .producto-mp-btn{
+    display:inline-flex; align-items:center; gap:6px; background:#009ee3; color:#fff;
+    font-family:var(--sans); font-weight:700; font-size:11.5px; padding:7px 12px; border-radius:999px; text-decoration:none; white-space:nowrap;
+  }
+  .producto-mp-btn:hover{background:#0087c4;}
+  .producto-chat-btn{
+    display:inline-flex; align-items:center; gap:6px; background:transparent; color:var(--ink);
+    font-family:var(--sans); font-weight:700; font-size:11.5px; padding:7px 12px; border-radius:999px;
+    text-decoration:none; white-space:nowrap; border:1px solid var(--line);
+  }
+  .producto-chat-btn:hover{background:var(--paper-2);}
+  .producto-botones{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end;}
+
+  .premio-item{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+  .premio-item:last-child{border-bottom:none;}
+  .premio-icon{width:30px; height:30px; border-radius:50%; background:rgba(215,34,42,0.08); color:var(--clay); display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:14px;}
+
+  .not-found{padding:100px 20px; text-align:center;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIGURACIÓN (misma que creallab-portal.html) ============ -->
+<script>
+  const SUPABASE_URL = "https://gyqqrfvdivlplghnboqb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cXFyZnZkaXZscGxnaG5ib3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjAyMDEsImV4cCI6MjEwMTYzNjIwMX0.5BEtTrA3BvsAO5daypauQgSXIYtOk7MOuMIzt0UpqWQ";
+  const DEMO_MODE = SUPABASE_URL.includes("TU_PROJECT_URL_AQUI");
+</script>
+
+<header>
+  <div class="container">
+    <div class="brand-name">CRE<span class="all">ALL</span>AB</div>
+  </div>
+</header>
+
+<div id="view-notfound" class="not-found hidden">
+  <h1>Este perfil no está disponible</h1>
+  <p>El enlace puede estar mal escrito, o esta persona todavía no hizo público su perfil.</p>
+</div>
+
+<div id="view-profile" class="hidden">
+  <div class="cover" id="cover-portada"></div>
+  <div class="container profile-head">
+    <div class="avatar-lg" id="avatar-initial">—</div>
+    <h1 id="member-name">—</h1>
+    <p class="bio" id="member-bio"></p>
+    <div class="world-tags" id="member-worlds"></div>
+    <div class="level-badge">
+      <span class="lvl-name" id="member-nivel">—</span>
+      <span class="lvl-pts" id="member-puntos">0 pts</span>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat"><strong id="stat-obras">0</strong><span>Obras</span></div>
+      <div class="stat"><strong id="stat-productos">0</strong><span>Productos</span></div>
+      <div class="stat"><strong id="stat-premios">0</strong><span>Premios</span></div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="tab-row" id="profile-tabs">
+      <button class="tab-btn active" data-tab="obras" type="button">Portafolio</button>
+      <button class="tab-btn" data-tab="productos" type="button">Productos</button>
+      <button class="tab-btn" data-tab="premios" type="button">Premios</button>
+    </div>
+
+    <div class="sections">
+      <div class="tab-panel" id="panel-obras">
+        <div class="obras-grid" id="obras-grid"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="tab-panel hidden" id="panel-productos">
+        <div class="card">
+          <div id="productos-list"><p class="empty">Cargando…</p></div>
+        </div>
+      </div>
+
+      <div class="tab-panel hidden" id="panel-premios">
+        <div class="card">
+          <div id="premios-list"><p class="empty">Cargando…</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const params = new URLSearchParams(window.location.search);
+  const handle = params.get("u");
+
+  function showNotFound(){
+    $("#view-notfound").classList.remove("hidden");
+    $("#view-profile").classList.add("hidden");
+  }
+  function showProfile(){
+    $("#view-notfound").classList.add("hidden");
+    $("#view-profile").classList.remove("hidden");
+  }
+
+  // ---------- pestañas del perfil ----------
+  document.querySelectorAll("#profile-tabs .tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.querySelectorAll("#profile-tabs .tab-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.add("hidden"));
+      $("#panel-" + btn.dataset.tab).classList.remove("hidden");
+    });
+  });
+
+  function renderObras(list){
+    const el = $("#obras-grid");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty" style="grid-column:1/-1;">Todavía no hay obras publicadas.</p>'; return; }
+    el.innerHTML = list.map(o => o.imagen_url
+      ? `<div class="obra-card"><img src="${o.imagen_url}" alt="${o.titulo}"><div class="oc-overlay"><strong>${o.titulo}</strong></div></div>`
+      : `<div class="obra-card noimg"><strong>${o.titulo}</strong></div>`
+    ).join("");
+  }
+
+  const WHATSAPP_NUM = "51934397763";
+  function money(n){
+    return "S/ " + Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function renderProductos(list){
+    const el = $("#productos-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Todavía no publica productos.</p>'; return; }
+    el.innerHTML = list.map(p => {
+      const waText = encodeURIComponent(`Hola, quiero comprar: ${p.nombre} (${money(p.precio)})`);
+      return `
+      <div class="producto-row">
+        <div class="producto-row-info">
+          <strong>${p.nombre}</strong>
+          <span>${p.tipo || p.categoria}</span>
+        </div>
+        <div class="producto-row-right">
+          <span class="producto-precio">${money(p.precio)}</span>
+          <div class="producto-botones">
+            <a class="producto-wa-btn" target="_blank" rel="noopener" href="https://wa.me/${WHATSAPP_NUM}?text=${waText}">Comprar</a>
+            ${p.link_pago_mp ? `<a class="producto-mp-btn" target="_blank" rel="noopener" href="${p.link_pago_mp}">Mercado Pago</a>` : ""}
+            <a class="producto-chat-btn" target="_blank" rel="noopener" href="creallab-chat.html?producto=${p.id}">Comprobante</a>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderPremios(list){
+    const el = $("#premios-list");
+    if(!list || !list.length){ el.innerHTML = '<p class="empty">Todavía no tiene premios.</p>'; return; }
+    el.innerHTML = list.map(p => `
+      <div class="premio-item">
+        <div class="premio-icon">★</div>
+        <div>
+          <strong style="font-size:13px; display:block;">${p.titulo}</strong>
+          <span style="font-size:11.5px; color:var(--ink-soft);">${p.descripcion || ""}</span>
+        </div>
+      </div>`).join("");
+  }
+
+  function renderHeader(profile, mundos, stats, counts){
+    $("#member-name").textContent = profile.nombre || profile.handle || "Miembro CREALLAB";
+    const avatarEl = $("#avatar-initial");
+    if (profile.avatar_url) {
+      avatarEl.style.backgroundImage = `url(${profile.avatar_url})`;
+      avatarEl.style.backgroundSize = "cover";
+      avatarEl.style.backgroundPosition = "center";
+      avatarEl.textContent = "";
+    } else {
+      avatarEl.style.backgroundImage = "";
+      avatarEl.textContent = (profile.nombre || profile.handle || "A").charAt(0).toUpperCase();
+    }
+    if (profile.portada_url) {
+      const coverEl = $("#cover-portada");
+      coverEl.style.backgroundImage = `url(${profile.portada_url})`;
+      coverEl.style.backgroundSize = "cover";
+      coverEl.style.backgroundPosition = "center";
+    }
+    $("#member-bio").textContent = profile.bio || "";
+    $("#member-worlds").innerHTML = (mundos || []).map(m => `<span class="world-tag">${m}</span>`).join("");
+    $("#member-nivel").textContent = (stats && stats.nivel) || "Aprendiz";
+    $("#member-puntos").textContent = ((stats && stats.puntos) || 0) + " pts";
+    $("#stat-obras").textContent = (counts && counts.obras) || 0;
+    $("#stat-productos").textContent = (counts && counts.productos) || 0;
+    $("#stat-premios").textContent = (counts && counts.premios) || 0;
+  }
+
+  // ---------- MODO DEMO ----------
+  if (DEMO_MODE) {
+    const MOCK_PROFILE = { nombre:"Miembro Ejemplo", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:true };
+    const MOCK_MUNDOS = ["ALLtaller", "ALLquimia"];
+    const MOCK_STATS = { puntos:65, nivel:"Oficial" };
+    const MOCK_OBRAS = [
+      { titulo:"Chuspa roja edición limitada", descripcion:"Tejido a mano.", imagen_url:"" },
+      { titulo:"Grabado en linóleo — serie I", descripcion:"", imagen_url:"" },
+    ];
+    const MOCK_PRODUCTOS = [{ id:"pr1", nombre:"Chuspa roja edición limitada", categoria:"OBRAS", tipo:"Tejido", precio:180, link_pago_mp:"https://www.mercadopago.com.pe/checkout/example-link" }];
+    const MOCK_PREMIOS = [{ titulo:"Primer taller completado", descripcion:"Por terminar tu primer curso en ALLtaller." }];
+
+    if (!handle) {
+      showNotFound();
+    } else {
+      renderHeader(MOCK_PROFILE, MOCK_MUNDOS, MOCK_STATS, { obras:MOCK_OBRAS.length, productos:MOCK_PRODUCTOS.length, premios:MOCK_PREMIOS.length });
+      renderObras(MOCK_OBRAS);
+      renderProductos(MOCK_PRODUCTOS);
+      renderPremios(MOCK_PREMIOS);
+      showProfile();
+    }
+    return;
+  }
+
+  // ---------- MODO REAL ----------
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  (async () => {
+    if (!handle) { showNotFound(); return; }
+
+    const { data: profile } = await supabase.from("profiles").select("*").eq("handle", handle).eq("perfil_publico", true).maybeSingle();
+    if (!profile) { showNotFound(); return; }
+
+    const [{ data: mundosRows }, { data: stats }, { data: obras }, { data: productos }, { data: premios }] = await Promise.all([
+      supabase.from("member_mundos").select("mundo").eq("member_id", profile.id),
+      supabase.from("member_stats").select("*").eq("member_id", profile.id).maybeSingle(),
+      supabase.from("obras").select("*").eq("member_id", profile.id).order("creado_en", { ascending:false }),
+      supabase.from("productos").select("*").eq("member_id", profile.id).eq("estado", "aprobado").eq("activo", true).order("creado_en", { ascending:false }),
+      supabase.from("premios").select("*").eq("member_id", profile.id),
+    ]);
+
+    const counts = { obras: (obras || []).length, productos: (productos || []).length, premios: (premios || []).length };
+    renderHeader(profile, (mundosRows || []).map(r => r.mundo), stats, counts);
+    renderObras(obras);
+    renderProductos(productos);
+    renderPremios(premios);
+    showProfile();
+  })().catch(() => showNotFound());
+})();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>

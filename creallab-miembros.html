@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Miembros — CREALLAB</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D0D0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CREALLAB">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:      #FFFFFF;
+    --paper-2:    #EDEDED;
+    --ink:        #121212;
+    --ink-soft:   #5A5A5A;
+    --clay:       #D7222A;
+    --night:      #0D0D0D;
+    --line:       rgba(17,17,17,0.14);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);}
+  p{margin:0 0 1em; color:var(--ink-soft);}
+  h1,h2{font-family:var(--serif); margin:0 0 .4em; font-weight:600;}
+  a{color:inherit;}
+  .container{max-width:1040px; margin:0 auto; padding:0 24px;}
+
+  header{border-bottom:1px solid var(--line); padding:16px 0; display:flex; align-items:center;}
+  header .container{display:flex; align-items:center; justify-content:space-between;}
+  .brand-name{font-family:var(--serif); font-weight:600; font-size:20px;}
+  .brand-name .all{color:var(--clay);}
+  .btn{
+    font-family:var(--sans); font-weight:600; font-size:13.5px;
+    padding:9px 18px; border-radius:999px; border:1px solid var(--line);
+    background:transparent; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-ghost:hover{border-color:var(--ink);}
+
+  .hero{
+    padding:44px 0 26px;
+    background:
+      repeating-linear-gradient(115deg, transparent 0 38px, var(--line) 38px 39px),
+      var(--paper);
+  }
+  .hero h1{font-size:30px;}
+  .hero p{max-width:560px; font-size:14.5px;}
+
+  .filters{display:flex; gap:8px; flex-wrap:wrap; margin:18px 0 6px;}
+  .filter-chip{
+    font-family:var(--sans); font-weight:600; font-size:12.5px; cursor:pointer;
+    padding:8px 15px; border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--ink-soft);
+  }
+  .filter-chip:hover{border-color:var(--ink);}
+  .filter-chip.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+
+  .members-wrap{padding:24px 0 70px;}
+  .members-grid{
+    display:grid; grid-template-columns:repeat(auto-fill, minmax(250px,1fr)); gap:16px;
+  }
+  .member-card{
+    border:1px solid var(--line); border-radius:16px; padding:22px 20px; background:#fff;
+    text-decoration:none; color:inherit; display:block; transition:box-shadow .15s, border-color .15s;
+  }
+  .member-card:hover{box-shadow:0 10px 26px rgba(0,0,0,0.07); border-color:rgba(17,17,17,0.28);}
+  .mc-top{display:flex; align-items:center; gap:12px;}
+  .mc-avatar{
+    width:48px; height:48px; border-radius:50%; background:var(--night); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:var(--serif); font-size:18px; flex-shrink:0;
+  }
+  .mc-name{font-family:var(--serif); font-size:16px; font-weight:600; margin:0;}
+  .mc-handle{font-size:11.5px; color:var(--ink-soft);}
+  .mc-bio{font-size:12.5px; margin:12px 0 10px; color:var(--ink-soft); display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .mc-tags{display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px;}
+  .world-tag{
+    font-size:10.5px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--clay);
+    background:rgba(215,34,42,0.08); padding:3px 9px; border-radius:999px;
+  }
+  .mc-bottom{display:flex; align-items:center; justify-content:space-between; padding-top:10px; border-top:1px solid var(--line);}
+  .mc-level{font-size:12px; font-weight:600;}
+  .mc-pts{font-size:11px; color:var(--ink-soft);}
+  .mc-link{font-size:12px; font-weight:700; color:var(--clay);}
+
+  .empty-state{padding:60px 20px; text-align:center;}
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIGURACIÓN (misma que creallab-portal.html) ============ -->
+<script>
+  const SUPABASE_URL = "https://gyqqrfvdivlplghnboqb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cXFyZnZkaXZscGxnaG5ib3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjAyMDEsImV4cCI6MjEwMTYzNjIwMX0.5BEtTrA3BvsAO5daypauQgSXIYtOk7MOuMIzt0UpqWQ";
+  const DEMO_MODE = SUPABASE_URL.includes("TU_PROJECT_URL_AQUI");
+</script>
+
+<header>
+  <div class="container">
+    <a href="creallab-landing.html" class="brand-name" style="text-decoration:none;">CRE<span class="all">ALL</span>AB</a>
+    <a href="creallab-portal.html" class="btn btn-ghost">Mi cuenta</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <h1>Miembros ALL</h1>
+    <p>Conoce a las personas de la comunidad CREALLAB que hicieron público su perfil — sus obras, sus cursos completados, sus premios y su nivel dentro del ecosistema ALL.</p>
+    <div class="filters" id="filters"></div>
+  </div>
+</section>
+
+<div class="container members-wrap">
+  <div class="members-grid" id="members-grid"><p class="empty-state">Cargando miembros…</p></div>
+</div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+
+  const WORLDS = ["ALLtaller", "ALLytectura", "ALLaventura", "ALLquimia", "ALLegado"];
+  let activeFilter = "Todos";
+  let allMembers = [];
+
+  function renderFilters(){
+    const el = $("#filters");
+    const chips = ["Todos", ...WORLDS];
+    el.innerHTML = chips.map(c => `<button class="filter-chip ${c === activeFilter ? "active" : ""}" data-mundo="${c}" type="button">${c}</button>`).join("");
+    el.querySelectorAll(".filter-chip").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeFilter = btn.dataset.mundo;
+        renderFilters();
+        renderMembers(allMembers);
+      });
+    });
+  }
+
+  function memberCard(m){
+    const initial = (m.nombre || m.handle || "A").charAt(0).toUpperCase();
+    const tags = (m.mundos || []).map(w => `<span class="world-tag">${w}</span>`).join("");
+    const avatarStyle = m.avatar_url ? ` style="background-image:url('${m.avatar_url}'); background-size:cover; background-position:center;"` : "";
+    return `
+      <a class="member-card" href="creallab-perfil.html?u=${encodeURIComponent(m.handle)}">
+        <div class="mc-top">
+          <div class="mc-avatar"${avatarStyle}>${m.avatar_url ? "" : initial}</div>
+          <div>
+            <p class="mc-name">${m.nombre || m.handle}</p>
+            <span class="mc-handle">@${m.handle}</span>
+          </div>
+        </div>
+        ${m.bio ? `<p class="mc-bio">${m.bio}</p>` : ""}
+        <div class="mc-tags">${tags}</div>
+        <div class="mc-bottom">
+          <span class="mc-level">${(m.nivel || "Aprendiz")} <span class="mc-pts">· ${m.puntos || 0} pts</span></span>
+          <span class="mc-link">Ver perfil →</span>
+        </div>
+      </a>`;
+  }
+
+  function renderMembers(list){
+    const el = $("#members-grid");
+    const filtered = activeFilter === "Todos"
+      ? list
+      : list.filter(m => (m.mundos || []).includes(activeFilter));
+
+    if (!filtered.length) {
+      el.innerHTML = '<p class="empty-state">Todavía no hay miembros públicos en este mundo.</p>';
+      return;
+    }
+    el.innerHTML = filtered.map(memberCard).join("");
+  }
+
+  renderFilters();
+
+  // ---------- MODO DEMO ----------
+  if (DEMO_MODE) {
+    allMembers = [
+      { nombre:"Miembro Ejemplo", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", mundos:["ALLtaller","ALLquimia"], nivel:"Oficial", puntos:65 },
+      { nombre:"Sofía Ramírez", handle:"sofia-ramirez", bio:"Grabadora y encuadernadora, entre lo ancestral y lo experimental.", mundos:["ALLytectura"], nivel:"Maestro", puntos:140 },
+      { nombre:"Diego Huamán", handle:"diego-huaman", bio:"Explorando pigmentos naturales y procesos de tinte.", mundos:["ALLquimia","ALLegado"], nivel:"Aprendiz", puntos:15 },
+    ];
+    renderMembers(allMembers);
+    return;
+  }
+
+  // ---------- MODO REAL ----------
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  (async () => {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id,nombre,handle,bio,avatar_url")
+      .eq("perfil_publico", true)
+      .not("handle", "is", null)
+      .order("nombre", { ascending: true });
+
+    const list = profiles || [];
+    if (!list.length) { renderMembers([]); return; }
+
+    const ids = list.map(p => p.id);
+    const [{ data: mundosRows }, { data: statsRows }] = await Promise.all([
+      supabase.from("member_mundos").select("member_id,mundo").in("member_id", ids),
+      supabase.from("member_stats").select("member_id,puntos,nivel").in("member_id", ids),
+    ]);
+
+    const mundosByMember = {};
+    (mundosRows || []).forEach(r => {
+      (mundosByMember[r.member_id] = mundosByMember[r.member_id] || []).push(r.mundo);
+    });
+    const statsByMember = {};
+    (statsRows || []).forEach(r => { statsByMember[r.member_id] = r; });
+
+    allMembers = list.map(p => ({
+      ...p,
+      mundos: mundosByMember[p.id] || [],
+      nivel: (statsByMember[p.id] && statsByMember[p.id].nivel) || "Aprendiz",
+      puntos: (statsByMember[p.id] && statsByMember[p.id].puntos) || 0,
+    }));
+
+    renderMembers(allMembers);
+  })().catch(() => {
+    $("#members-grid").innerHTML = '<p class="empty-state">No se pudo cargar la lista de miembros. Intenta de nuevo más tarde.</p>';
+  });
+})();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>

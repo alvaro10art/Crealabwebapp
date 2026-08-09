@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contacto — CREALLAB</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D0D0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CREALLAB">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:      #FFFFFF;
+    --paper-2:    #EDEDED;
+    --ink:        #121212;
+    --ink-soft:   #5A5A5A;
+    --clay:       #D7222A;
+    --night:      #0D0D0D;
+    --line:       rgba(17,17,17,0.14);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper); color:var(--ink); font-family:var(--sans);}
+  p{margin:0 0 1em; color:var(--ink-soft);}
+  h1,h2{font-family:var(--serif); margin:0 0 .4em; font-weight:600;}
+  a{color:inherit;}
+  .container{max-width:640px; margin:0 auto; padding:0 20px;}
+  button{font-family:var(--sans); cursor:pointer;}
+
+  header{border-bottom:1px solid var(--line); padding:16px 0;}
+  .brand-name{font-family:var(--serif); font-weight:600; font-size:20px;}
+  .brand-name .all{color:var(--clay);}
+
+  .wrap{padding:28px 0 60px;}
+  .empty-state{padding:80px 20px; text-align:center;}
+  .hidden{display:none !important;}
+
+  .producto-card{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:20px; background:var(--paper-2);
+  }
+  .producto-card strong{display:block; font-size:14.5px;}
+  .producto-card span{font-size:12px; color:var(--ink-soft);}
+  .producto-card .precio{font-family:var(--serif); font-size:17px; font-weight:600; color:var(--clay); white-space:nowrap;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:5px;}
+  .field input, .field textarea{
+    width:100%; padding:11px 13px; border-radius:9px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:14px; background:#fff; resize:vertical;
+  }
+  .field input[type="file"]{padding:8px;}
+  .btn{
+    border:none; border-radius:999px; padding:12px 22px; font-weight:700; font-size:14px;
+    background:var(--clay); color:#fff;
+  }
+  .btn:hover{background:#b81c23;}
+  .btn:disabled{opacity:.55; cursor:default;}
+  .form-msg{font-size:12.5px; margin-top:10px; color:var(--clay);}
+
+  /* ---------- chat ---------- */
+  .chat-head{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;}
+  .chat-head h2{font-size:16px; margin:0;}
+  .chat-head span{font-size:12px; color:var(--ink-soft);}
+  .chat-cerrada-banner{
+    background:var(--paper-2); border-radius:10px; padding:10px 14px; font-size:12.5px;
+    text-align:center; margin-bottom:14px; color:var(--ink-soft);
+  }
+  .chat-log{display:flex; flex-direction:column; margin-bottom:16px;}
+  .chat-msg{max-width:78%; padding:10px 14px; border-radius:14px; font-size:13.5px; line-height:1.45; margin-bottom:10px;}
+  .chat-msg.mio{background:var(--clay); color:#fff; margin-left:auto; border-bottom-right-radius:4px;}
+  .chat-msg.otro{background:var(--paper-2); margin-right:auto; border-bottom-left-radius:4px;}
+  .chat-msg img{max-width:100%; border-radius:8px; margin-top:6px; display:block;}
+  .chat-msg .hora{font-size:10px; opacity:.65; margin-top:5px; display:block;}
+  .chat-reply{display:flex; flex-direction:column; gap:8px; border-top:1px solid var(--line); padding-top:14px;}
+  .chat-reply textarea{
+    width:100%; padding:11px 13px; border-radius:9px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:14px; resize:vertical; min-height:60px;
+  }
+  .chat-reply-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .chat-reply-row input[type="file"]{font-size:12px; flex:1; min-width:180px;}
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIGURACIÓN (misma que las demás páginas) ============ -->
+<script>
+  const SUPABASE_URL = "https://gyqqrfvdivlplghnboqb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cXFyZnZkaXZscGxnaG5ib3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjAyMDEsImV4cCI6MjEwMTYzNjIwMX0.5BEtTrA3BvsAO5daypauQgSXIYtOk7MOuMIzt0UpqWQ";
+  const DEMO_MODE = SUPABASE_URL.includes("TU_PROJECT_URL_AQUI");
+</script>
+
+<header>
+  <div class="container">
+    <div class="brand-name">CRE<span class="all">ALL</span>AB</div>
+  </div>
+</header>
+
+<div class="container wrap">
+
+  <div id="view-error" class="empty-state hidden">
+    <h1>No pudimos abrir este chat</h1>
+    <p id="error-texto">Falta indicar qué producto — vuelve al catálogo y usa el botón "Enviar comprobante y contactar" desde ahí.</p>
+  </div>
+
+  <div id="view-form" class="hidden">
+    <div class="producto-card">
+      <div>
+        <strong id="form-producto-nombre">—</strong>
+        <span id="form-producto-autor">—</span>
+      </div>
+      <span class="precio" id="form-producto-precio">—</span>
+    </div>
+    <h1 style="font-size:19px;">Envía tu comprobante</h1>
+    <p>Escríbele al artista y adjunta la foto o captura de tu pago. Se abre una conversación privada entre ustedes dos.</p>
+    <div class="field">
+      <label for="f-nombre">Tu nombre</label>
+      <input type="text" id="f-nombre" placeholder="¿Cómo te llamas?">
+    </div>
+    <div class="field">
+      <label for="f-contacto">Tu WhatsApp o correo (opcional, por si se corta el chat)</label>
+      <input type="text" id="f-contacto" placeholder="Opcional">
+    </div>
+    <div class="field">
+      <label for="f-mensaje">Mensaje</label>
+      <textarea id="f-mensaje" rows="3" placeholder="Ej: Hola, ya hice el pago, acá está el comprobante."></textarea>
+    </div>
+    <div class="field">
+      <label for="f-imagen">Foto del comprobante (opcional)</label>
+      <input type="file" id="f-imagen" accept="image/*">
+    </div>
+    <button id="btn-enviar-inicio" class="btn" type="button">Enviar y contactar al artista</button>
+    <div class="form-msg" id="form-msg"></div>
+  </div>
+
+  <div id="view-chat" class="hidden">
+    <div class="producto-card">
+      <div>
+        <strong id="chat-producto-nombre">—</strong>
+        <span id="chat-producto-autor">—</span>
+      </div>
+      <span class="precio" id="chat-producto-precio">—</span>
+    </div>
+    <div class="chat-head">
+      <h2>Tu conversación</h2>
+      <span id="chat-estado-label"></span>
+    </div>
+    <div id="chat-cerrada-banner" class="chat-cerrada-banner hidden">Esta conversación está cerrada. Si necesitas algo más, escribe uno nuevo desde el catálogo.</div>
+    <div class="chat-log" id="chat-log"></div>
+    <div class="chat-reply" id="chat-reply">
+      <textarea id="r-mensaje" placeholder="Escribe un mensaje…"></textarea>
+      <div class="chat-reply-row">
+        <input type="file" id="r-imagen" accept="image/*">
+        <button id="btn-enviar-reply" class="btn" type="button">Enviar</button>
+      </div>
+      <div class="form-msg" id="reply-msg"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const $ = (sel) => document.querySelector(sel);
+  const params = new URLSearchParams(window.location.search);
+  const productoId = params.get("producto");
+  let convId = params.get("conv");
+
+  function show(view){
+    ["view-error","view-form","view-chat"].forEach(id => $("#" + id).classList.toggle("hidden", id !== view));
+  }
+  function showError(texto){
+    if (texto) $("#error-texto").textContent = texto;
+    show("view-error");
+  }
+
+  function money(n){
+    return "S/ " + Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function hora(iso){
+    try { return new Date(iso).toLocaleString("es-PE", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" }); }
+    catch(e){ return ""; }
+  }
+
+  function fillProductoCard(prefix, producto){
+    $("#" + prefix + "-producto-nombre").textContent = producto.nombre;
+    $("#" + prefix + "-producto-autor").textContent = (producto.tipo || producto.categoria) + " · " + (producto.autor || "CREALLAB");
+    $("#" + prefix + "-producto-precio").textContent = money(producto.precio);
+  }
+
+  function renderLog(mensajes){
+    const el = $("#chat-log");
+    el.innerHTML = mensajes.map(m => {
+      const mio = m.autor_tipo === "comprador";
+      const img = m.imagen_url ? `<img src="${m.imagen_url}" alt="Comprobante">` : "";
+      const texto = m.texto ? `<span>${m.texto.replace(/</g, "&lt;")}</span>` : "";
+      return `<div class="chat-msg ${mio ? "mio" : "otro"}">${texto}${img}<span class="hora">${m.autor_tipo === "artista" ? "Artista" : "Tú"} · ${hora(m.creado_en)}</span></div>`;
+    }).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  // ============ MODO DEMO ============
+  if (DEMO_MODE) {
+    const MOCK_PRODUCTO = { nombre:"Chuspa roja edición limitada", categoria:"OBRAS", tipo:"Tejido", precio:180, autor:"Miembro Ejemplo" };
+    let mockMensajes = [];
+    let mockEstado = "abierta";
+    let mockStarted = false;
+
+    if (!productoId) { showError(); return; }
+
+    function pintarChatDemo(){
+      fillProductoCard("chat", MOCK_PRODUCTO);
+      $("#chat-estado-label").textContent = mockEstado === "cerrada" ? "Cerrada" : "Abierta";
+      $("#chat-cerrada-banner").classList.toggle("hidden", mockEstado !== "cerrada");
+      $("#chat-reply").classList.toggle("hidden", mockEstado === "cerrada");
+      renderLog(mockMensajes);
+      show("view-chat");
+    }
+
+    fillProductoCard("form", MOCK_PRODUCTO);
+    show("view-form");
+
+    $("#btn-enviar-inicio").addEventListener("click", () => {
+      const nombre = $("#f-nombre").value.trim();
+      const mensaje = $("#f-mensaje").value.trim();
+      const file = $("#f-imagen").files[0];
+      if (!nombre) { $("#form-msg").textContent = "Cuéntanos tu nombre."; return; }
+      if (!mensaje && !file) { $("#form-msg").textContent = "Escribe un mensaje o adjunta el comprobante."; return; }
+      mockMensajes.push({
+        autor_tipo:"comprador", texto: mensaje || null,
+        imagen_url: file ? URL.createObjectURL(file) : "",
+        creado_en: new Date().toISOString(),
+      });
+      mockStarted = true;
+      pintarChatDemo();
+      // simula que el artista responde después de un momento, para mostrar cómo se ve
+      setTimeout(() => {
+        mockMensajes.push({ autor_tipo:"artista", texto:"¡Gracias! Ya vi tu comprobante, en breve coordinamos el envío (modo demo).", creado_en: new Date().toISOString() });
+        pintarChatDemo();
+      }, 1800);
+    });
+
+    $("#btn-enviar-reply").addEventListener("click", () => {
+      const mensaje = $("#r-mensaje").value.trim();
+      const file = $("#r-imagen").files[0];
+      if (!mensaje && !file) return;
+      mockMensajes.push({
+        autor_tipo:"comprador", texto: mensaje || null,
+        imagen_url: file ? URL.createObjectURL(file) : "",
+        creado_en: new Date().toISOString(),
+      });
+      $("#r-mensaje").value = ""; $("#r-imagen").value = "";
+      pintarChatDemo();
+    });
+    return;
+  }
+
+  // ============ MODO REAL ============
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let productoActual = null;
+  let pollTimer = null;
+  const signedUrlCache = new Map();
+
+  async function asegurarSesion(){
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) return session;
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error) throw error;
+    return data.session;
+  }
+
+  // Si ya tiene una sesión de miembro CREALLAB abierta en este navegador
+  // (por ejemplo porque entró antes a su cuenta en creallab-portal.html),
+  // le autocompletamos sus datos y la conversación queda ligada a su
+  // cuenta real — así le va a aparecer en su propio buzón, no solo en
+  // este navegador. Si no tiene sesión, sigue como invitado normal.
+  async function autocompletarSiEsMiembro(){
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session || session.user.is_anonymous) return;
+    const { data: profile } = await supabase.from("profiles").select("nombre,email").eq("id", session.user.id).maybeSingle();
+    if (profile) {
+      $("#f-nombre").value = profile.nombre || "";
+      $("#f-contacto").value = profile.email || "";
+    }
+  }
+
+  async function cargarProducto(id){
+    const { data, error } = await supabase.from("productos")
+      .select("*, profiles(nombre)")
+      .eq("id", id).eq("estado", "aprobado").eq("activo", true)
+      .maybeSingle();
+    if (error || !data) return null;
+    return { ...data, autor: (data.profiles && data.profiles.nombre) || data.autor_manual || "CREALLAB" };
+  }
+
+  async function firmarImagen(path){
+    if (!path) return "";
+    const cached = signedUrlCache.get(path);
+    if (cached && cached.exp > Date.now()) return cached.url;
+    const { data, error } = await supabase.storage.from("comprobantes").createSignedUrl(path, 3600);
+    if (error || !data) return "";
+    signedUrlCache.set(path, { url: data.signedUrl, exp: Date.now() + 55 * 60 * 1000 });
+    return data.signedUrl;
+  }
+
+  async function cargarYPintarChat(){
+    const { data: conv } = await supabase.from("conversaciones").select("*").eq("id", convId).maybeSingle();
+    if (!conv) {
+      showError("No encontramos esta conversación desde este navegador — puede que la hayas iniciado desde otro dispositivo. Vuelve a escribir tu mensaje desde el botón del catálogo.");
+      if (pollTimer) clearInterval(pollTimer);
+      return;
+    }
+    const { data: mensajes } = await supabase.from("mensajes").select("*").eq("conversacion_id", convId).order("creado_en", { ascending:true });
+    const conImagenes = await Promise.all((mensajes || []).map(async m => ({ ...m, imagen_url: await firmarImagen(m.imagen_path) })));
+
+    if (productoActual) fillProductoCard("chat", productoActual);
+    $("#chat-estado-label").textContent = conv.estado === "cerrada" ? "Cerrada" : "Abierta";
+    $("#chat-cerrada-banner").classList.toggle("hidden", conv.estado !== "cerrada");
+    $("#chat-reply").classList.toggle("hidden", conv.estado === "cerrada");
+    renderLog(conImagenes);
+    show("view-chat");
+  }
+
+  async function subirComprobante(file, idConv){
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+    const path = `${idConv}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("comprobantes").upload(path, file, { cacheControl: "3600", upsert:false, contentType: file.type || undefined });
+    if (error) throw error;
+    return path;
+  }
+
+  async function iniciarConversacion(){
+    const msgEl = $("#form-msg");
+    const nombre = $("#f-nombre").value.trim();
+    const mensaje = $("#f-mensaje").value.trim();
+    const file = $("#f-imagen").files[0];
+    if (!nombre) { msgEl.textContent = "Cuéntanos tu nombre."; return; }
+    if (!mensaje && !file) { msgEl.textContent = "Escribe un mensaje o adjunta el comprobante."; return; }
+
+    msgEl.textContent = "Enviando…";
+    try {
+      await asegurarSesion();
+      const { data: conv, error: convError } = await supabase.from("conversaciones").insert({
+        producto_id: productoId,
+        comprador_nombre: nombre,
+        comprador_contacto: $("#f-contacto").value.trim() || null,
+      }).select().single();
+      if (convError) throw convError;
+
+      let imagenPath = null;
+      if (file) imagenPath = await subirComprobante(file, conv.id);
+
+      const { error: msgError } = await supabase.from("mensajes").insert({
+        conversacion_id: conv.id,
+        texto: mensaje || null,
+        imagen_path: imagenPath,
+      });
+      if (msgError) throw msgError;
+
+      convId = conv.id;
+      const url = new URL(window.location.href);
+      url.searchParams.set("conv", convId);
+      window.history.replaceState({}, "", url.toString());
+
+      await cargarYPintarChat();
+      pollTimer = setInterval(cargarYPintarChat, 4000);
+    } catch (err) {
+      msgEl.textContent = "No se pudo enviar: " + err.message;
+    }
+  }
+
+  async function enviarReply(){
+    const msgEl = $("#reply-msg");
+    const mensaje = $("#r-mensaje").value.trim();
+    const file = $("#r-imagen").files[0];
+    if (!mensaje && !file) return;
+
+    try {
+      let imagenPath = null;
+      if (file) imagenPath = await subirComprobante(file, convId);
+      const { error } = await supabase.from("mensajes").insert({
+        conversacion_id: convId,
+        texto: mensaje || null,
+        imagen_path: imagenPath,
+      });
+      if (error) throw error;
+      $("#r-mensaje").value = ""; $("#r-imagen").value = "";
+      msgEl.textContent = "";
+      await cargarYPintarChat();
+    } catch (err) {
+      msgEl.textContent = "No se pudo enviar: " + err.message;
+    }
+  }
+
+  $("#btn-enviar-inicio").addEventListener("click", iniciarConversacion);
+  $("#btn-enviar-reply").addEventListener("click", enviarReply);
+
+  (async () => {
+    if (convId) {
+      try { await asegurarSesion(); } catch(e) { /* si falla, cargarYPintarChat va a mostrar el error igual */ }
+      if (productoId) productoActual = await cargarProducto(productoId);
+      await cargarYPintarChat();
+      pollTimer = setInterval(cargarYPintarChat, 4000);
+      return;
+    }
+    if (!productoId) { showError(); return; }
+    const producto = await cargarProducto(productoId);
+    if (!producto) { showError("Este producto ya no está disponible."); return; }
+    productoActual = producto;
+    fillProductoCard("form", producto);
+    await autocompletarSiEsMiembro();
+    show("view-form");
+  })();
+})();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>
