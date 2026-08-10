@@ -139,6 +139,8 @@
   .viz-tooltip .tt-dot{width:8px; height:8px; border-radius:2px; flex-shrink:0;}
 
   .empty-note{font-size:13px; padding:30px 0; text-align:center; color:var(--viz-muted);}
+
+  .ranking-table-wrap{overflow-x:auto;}
 </style>
 </head>
 <body>
@@ -268,6 +270,24 @@
         <div class="chart-svg-wrap"></div>
         <div class="chart-table-wrap hidden"></div>
       </div>
+
+      <div class="chart-card wide" id="chart-ranking">
+        <div class="chart-head">
+          <div>
+            <h2>Mejores usuarios</h2>
+            <p class="chart-sub">Top 5 por ingresos generados — ventas confirmadas.</p>
+          </div>
+          <button type="button" class="table-toggle-btn" data-target="chart-ranking">Ver como tabla</button>
+        </div>
+        <div class="chart-svg-wrap"></div>
+        <div class="chart-table-wrap hidden"></div>
+      </div>
+
+      <div class="chart-card wide" id="card-ranking-full">
+        <h2>Ranking completo</h2>
+        <p class="chart-sub">Todos los miembros con ventas o productos — para reconocer de un vistazo a quién le está yendo mejor.</p>
+        <div class="ranking-table-wrap" id="ranking-table-wrap"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -285,6 +305,8 @@
   function compact(n){
     return Number(n || 0).toLocaleString("es-PE");
   }
+
+  const NIVEL_LABEL = { explorador:"Explorador", creador:"Creador", mentor:"Mentor", nodo:"Nodo" };
 
   // ---------- ventana de meses (últimos 6, terminando en el actual) ----------
   const MES_ABR = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
@@ -517,12 +539,11 @@
 
     // Niveles hoy
     const nivelOrden = ["explorador","creador","mentor","nodo"];
-    const nivelLabel = { explorador:"Explorador", creador:"Creador", mentor:"Mentor", nodo:"Nodo" };
     const nivelColores = ["var(--viz-ord-1)","var(--viz-ord-2)","var(--viz-ord-3)","var(--viz-ord-4)"];
     const nivelPorClave = {};
     (data.distribucion_niveles || []).forEach(r => { nivelPorClave[r.nivel] = Number(r.total) || 0; });
     barChart(document.getElementById("chart-niveles"), {
-      labels: nivelOrden.map(k => nivelLabel[k]),
+      labels: nivelOrden.map(k => NIVEL_LABEL[k]),
       values: nivelOrden.map(k => nivelPorClave[k] || 0),
       colors: nivelColores,
       valueLabel: "Miembros",
@@ -564,6 +585,44 @@
       labelHeader: "Producto",
       formatY: v => money(v),
     });
+
+    // Mejores usuarios (ranking)
+    const ranking = data.ranking_miembros || [];
+    const topRanking = ranking.slice(0, 5);
+    barChart(document.getElementById("chart-ranking"), {
+      horizontal: true,
+      labels: topRanking.map(r => r.nombre || r.handle || "—"),
+      values: topRanking.map(r => Number(r.ingresos_generados) || 0),
+      colors: "var(--viz-3)",
+      valueLabel: "Ingresos",
+      labelHeader: "Miembro",
+      formatY: v => money(v),
+    });
+    renderRankingTable(ranking);
+  }
+
+  function renderRankingTable(rows){
+    const wrap = document.getElementById("ranking-table-wrap");
+    if (!rows || !rows.length){
+      wrap.innerHTML = `<p class="empty-note">Todavía no hay ventas para armar el ranking.</p>`;
+      return;
+    }
+    const headRow = `<tr>
+      <th>#</th><th>Miembro</th><th>Nivel</th>
+      <th class="num">Ventas</th><th class="num">Ingresos</th>
+      <th class="num">Alumnos</th><th class="num">Productos activos</th>
+    </tr>`;
+    const bodyRows = rows.map((r, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${r.nombre || r.handle || "—"}</td>
+        <td>${NIVEL_LABEL[r.nivel] || r.nivel || "—"}</td>
+        <td class="num">${compact(r.ventas_confirmadas)}</td>
+        <td class="num">${money(r.ingresos_generados)}</td>
+        <td class="num">${compact(r.alumnos)}</td>
+        <td class="num">${compact(r.productos_activos)}</td>
+      </tr>`).join("");
+    wrap.innerHTML = `<table class="data-table"><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
   }
 
   // ---------- MODO DEMO ----------
@@ -594,6 +653,14 @@
         { nombre:"Prensa CHUSPA Mini", categoria:"HERRAMIENTAS Y MATERIALES", ventas:2, ingresos:900 },
         { nombre:"Tinte natural de cochinilla", categoria:"HERRAMIENTAS Y MATERIALES", ventas:5, ingresos:350 },
         { nombre:"Taller ALLquimia — pigmentos", categoria:"CURSOS", ventas:2, ingresos:150 },
+      ],
+      ranking_miembros: [
+        { member_id:"m1", nombre:"Marina Q.", handle:"marina-q", nivel:"mentor", ventas_confirmadas:11, ingresos_generados:1980, alumnos:7, productos_activos:4 },
+        { member_id:"m2", nombre:"Diego H.", handle:"diego-h", nivel:"creador", ventas_confirmadas:9, ingresos_generados:1350, alumnos:2, productos_activos:3 },
+        { member_id:"m3", nombre:"Rosa T.", handle:"rosa-t", nivel:"creador", ventas_confirmadas:6, ingresos_generados:920, alumnos:0, productos_activos:2 },
+        { member_id:"m4", nombre:"Iván C.", handle:"ivan-c", nivel:"nodo", ventas_confirmadas:4, ingresos_generados:610, alumnos:4, productos_activos:1 },
+        { member_id:"m5", nombre:"Lucía F.", handle:"lucia-f", nivel:"explorador", ventas_confirmadas:2, ingresos_generados:280, alumnos:0, productos_activos:1 },
+        { member_id:"m6", nombre:"Bruno S.", handle:"bruno-s", nivel:"explorador", ventas_confirmadas:0, ingresos_generados:0, alumnos:0, productos_activos:1 },
       ],
     };
   }
@@ -646,7 +713,7 @@
       const [
         { data: resumenRows }, { data: evMiembros }, { data: evSeguidores },
         { data: distNiveles }, { data: evVentas }, { data: evMembresias },
-        { data: evActividad }, { data: topProd },
+        { data: evActividad }, { data: topProd }, { data: ranking },
       ] = await Promise.all([
         supabase.from("resumen_hoy").select("*"),
         supabase.from("evolucion_miembros").select("*"),
@@ -656,6 +723,7 @@
         supabase.from("evolucion_membresias").select("*"),
         supabase.from("evolucion_actividad").select("*"),
         supabase.from("top_productos").select("*"),
+        supabase.from("ranking_miembros").select("*"),
       ]);
       return {
         resumen: (resumenRows && resumenRows[0]) || { total_miembros:0, total_seguidores:0, ingresos_totales:0, membresias_activas_ahora:0 },
@@ -666,6 +734,7 @@
         evolucion_membresias: evMembresias || [],
         evolucion_actividad: evActividad || [],
         top_productos: topProd || [],
+        ranking_miembros: ranking || [],
       };
     }
 
