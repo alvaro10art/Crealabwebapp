@@ -173,13 +173,12 @@
   .metrica-prod-row .mp-name{flex:1;}
   .metrica-prod-row .mp-amount{font-weight:700; font-variant-numeric:tabular-nums;}
 
-  /* ---------- Sé un PRO ---------- */
-  .pro-card{background:linear-gradient(135deg, rgba(215,34,42,0.06), rgba(215,34,42,0.01)); border-color:rgba(215,34,42,0.25);}
-  .pro-status{font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:12px;}
-  .pro-status.is-active{color:#1A6B33;}
-  .pro-status.is-expired{color:var(--clay);}
-  .pro-perks{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
-  .pro-perk{font-size:11.5px; font-weight:700; letter-spacing:.02em; padding:5px 12px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--ink-soft);}
+  /* ---------- Sé un PRO: acceso directo en el header ---------- */
+  .nav-pro-btn{border-color:rgba(215,34,42,0.35); color:var(--clay); font-weight:700;}
+  .nav-pro-btn:hover{background:rgba(215,34,42,0.06);}
+  .nav-pro-btn.is-active{border-color:rgba(26,107,51,0.35); color:#1A6B33;}
+  .nav-pro-btn.is-active:hover{background:rgba(26,107,51,0.06);}
+  .abrir-pro-link{color:var(--clay); font-weight:600; cursor:pointer;}
 
   /* ---------- modal: planes PRO ---------- */
   /* (selector con #modal-pro para ganarle en especificidad a .modal-card,
@@ -430,6 +429,7 @@
       </div>
       <button id="btn-abrir-perfil" class="btn btn-ghost hidden">Mi perfil público</button>
       <button id="btn-logout" class="btn btn-ghost hidden">Cerrar sesión</button>
+      <button id="btn-abrir-pro" class="btn btn-ghost nav-pro-btn hidden" type="button">Sé un PRO</button>
     </div>
   </div>
 </header>
@@ -490,18 +490,6 @@
         <p class="nivel-progreso-txt" id="nivel-progreso-txt">Cargando…</p>
         <div class="progress-bar"><span id="nivel-progreso-barra" style="width:0%;"></span></div>
         <div class="nivel-insignias" id="nivel-insignias"></div>
-      </div>
-
-      <div class="card wide pro-card" id="card-pro">
-        <h2><span class="dot"></span>Sé un PRO</h2>
-        <p class="pro-status" id="pro-status-note">Cargando…</p>
-        <div class="pro-perks">
-          <span class="pro-perk">Sorteos</span>
-          <span class="pro-perk">Concursos</span>
-          <span class="pro-perk">Pases VIP</span>
-          <span class="pro-perk">Promociones</span>
-        </div>
-        <button id="btn-abrir-pro" class="btn btn-primary" type="button">Ver planes PRO</button>
       </div>
 
       <div class="card wide admin-card hidden" id="card-admin">
@@ -905,7 +893,7 @@
     if (esPro) {
       renderListaTipo("#promociones-list", todos.filter(c => c.tipo === "promocion"), "No hay promociones activas para tus mundos por ahora.");
     } else {
-      $("#promociones-list").innerHTML = '<p class="empty">Esto es para miembros PRO — <a href="#card-pro">hazte PRO</a> para verlas.</p>';
+      $("#promociones-list").innerHTML = '<p class="empty">Esto es para miembros PRO — <a href="#" class="abrir-pro-link">hazte PRO</a> para verlas.</p>';
     }
   }
 
@@ -921,21 +909,20 @@
   }
 
   function renderPro(profile){
-    const el = $("#pro-status-note");
     const btn = $("#btn-abrir-pro");
     const activo = esProVigente(profile);
     if (activo) {
-      el.textContent = `Eres PRO hasta el ${fmtFechaCorta(profile.pro_vencimiento)}.`;
-      el.className = "pro-status is-active";
-      btn.textContent = "Renovar PRO";
+      btn.textContent = "PRO ✓";
+      btn.title = `Eres PRO hasta el ${fmtFechaCorta(profile.pro_vencimiento)}. Clic para renovar.`;
+      btn.classList.add("is-active");
     } else if (profile && profile.pro_vencimiento) {
-      el.textContent = `Tu PRO venció el ${fmtFechaCorta(profile.pro_vencimiento)} — renuévalo para seguir participando.`;
-      el.className = "pro-status is-expired";
       btn.textContent = "Renovar PRO";
+      btn.title = `Tu PRO venció el ${fmtFechaCorta(profile.pro_vencimiento)} — renuévalo para seguir participando.`;
+      btn.classList.remove("is-active");
     } else {
-      el.textContent = "Aún no eres PRO. Hazte PRO para participar en sorteos, concursos, pases VIP y promociones.";
-      el.className = "pro-status";
-      btn.textContent = "Hazte PRO";
+      btn.textContent = "Sé un PRO";
+      btn.title = "Participa en sorteos, concursos, pases VIP y promociones.";
+      btn.classList.remove("is-active");
     }
     return activo;
   }
@@ -992,11 +979,18 @@
     const plan = planesProCache.find(p => String(p.id) === btn.dataset.id);
     if (plan) abrirPasoPago(plan);
   });
+  // los mensajes "hazte PRO" de las secciones bloqueadas (sorteos, concursos,
+  // pases VIP, promociones) también abren esta misma ventana de planes.
+  document.addEventListener("click", (e) => {
+    if (!e.target.classList.contains("abrir-pro-link")) return;
+    e.preventDefault();
+    openProModal();
+  });
 
   function renderParticipaLista(selector, list, esPro, vacio, itemFn){
     const el = $(selector);
     if (!esPro) {
-      el.innerHTML = '<p class="empty">Esto es para miembros PRO — <a href="#card-pro">hazte PRO</a> para participar.</p>';
+      el.innerHTML = '<p class="empty">Esto es para miembros PRO — <a href="#" class="abrir-pro-link">hazte PRO</a> para participar.</p>';
       return;
     }
     if (!list || !list.length) { el.innerHTML = `<p class="empty">${vacio}</p>`; return; }
@@ -1474,6 +1468,7 @@
     btnLogout.classList.remove("hidden");
     btnAbrirPerfil.classList.remove("hidden");
     $("#btn-buzon").classList.remove("hidden");
+    $("#btn-abrir-pro").classList.remove("hidden");
   }
   function showLogin(){
     viewDash.classList.add("hidden");
@@ -1481,6 +1476,7 @@
     btnLogout.classList.add("hidden");
     btnAbrirPerfil.classList.add("hidden");
     $("#btn-buzon").classList.add("hidden");
+    $("#btn-abrir-pro").classList.add("hidden");
     $("#buzon-dropdown").classList.add("hidden");
     modalPerfil.classList.add("hidden");
   }
