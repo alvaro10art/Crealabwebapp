@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel de marca — CREALLAB</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D0D0D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CREALLAB">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,600;1,500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:      #FFFFFF;
+    --paper-2:    #EDEDED;
+    --ink:        #121212;
+    --ink-soft:   #5A5A5A;
+    --clay:       #D7222A;
+    --night:      #0D0D0D;
+    --line:       rgba(17,17,17,0.14);
+    --serif: 'Fraunces', Georgia, serif;
+    --sans: 'Space Grotesk', 'Helvetica Neue', Arial, sans-serif;
+
+    /* ---- paleta del panel (dataviz, validada) ---- */
+    --viz-surface:     #fcfcfb;
+    --viz-text:        #0b0b0b;
+    --viz-text-soft:   #52514e;
+    --viz-muted:       #898781;
+    --viz-grid:        #e1e0d9;
+    --viz-baseline:    #c3c2b7;
+    --viz-1: #2a78d6;   /* miembros / línea única / niveles-alto */
+    --viz-2: #eb6834;   /* seguidores / obras */
+    --viz-3: #1baf7a;   /* membresías / premios */
+    --viz-ord-1: #86b6ef;
+    --viz-ord-2: #5598e7;
+    --viz-ord-3: #2a78d6;
+    --viz-ord-4: #184f95;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; background:var(--paper-2); color:var(--ink); font-family:var(--sans);}
+  p{margin:0 0 1em; color:var(--ink-soft);}
+  h1,h2{font-family:var(--serif); margin:0 0 .4em; font-weight:600;}
+  a{color:inherit;}
+  .container{max-width:1080px; margin:0 auto; padding:0 24px;}
+
+  header{border-bottom:1px solid var(--line); padding:16px 0; background:var(--paper);}
+  header .container{display:flex; align-items:center; justify-content:space-between;}
+  .brand-name{font-family:var(--serif); font-weight:600; font-size:20px; text-decoration:none;}
+  .brand-name .all{color:var(--clay);}
+  .header-actions{display:flex; align-items:center; gap:10px;}
+  .btn{
+    font-family:var(--sans); font-weight:600; font-size:13.5px;
+    padding:9px 18px; border-radius:999px; border:1px solid var(--line);
+    background:transparent; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-ghost:hover{border-color:var(--ink);}
+  .btn-clay{background:var(--night); color:#fff; border-color:var(--night);}
+  .btn-clay:hover{background:#000;}
+
+  /* ---------- login / acceso denegado ---------- */
+  .gate-wrap{min-height:70vh; display:flex; align-items:center; justify-content:center; padding:40px 20px;}
+  .gate-card{
+    width:100%; max-width:380px; background:var(--paper); border:1px solid var(--line);
+    border-radius:18px; padding:32px 28px;
+  }
+  .gate-card h1{font-size:22px;}
+  .gate-card p{font-size:13.5px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:12px; font-weight:600; margin-bottom:5px; color:var(--ink-soft);}
+  .field input{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:14px; background:#fff;
+  }
+  .field input:focus{outline:2px solid var(--night); outline-offset:1px;}
+  .gate-submit{width:100%; justify-content:center; margin-top:4px;}
+  .gate-msg{font-size:12.5px; margin-top:12px;}
+  .gate-msg.error{color:var(--clay);}
+  .gate-msg.ok{color:#1baf7a;}
+  .denied-icon{font-size:32px; margin-bottom:10px;}
+  .hidden{display:none !important;}
+
+  /* ---------- dashboard ---------- */
+  .dash-hero{padding:36px 0 8px;}
+  .dash-hero h1{font-size:28px;}
+  .dash-hero p{max-width:560px; font-size:14px;}
+  .snapshot-row{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:6px 0 4px;}
+  .snapshot-hint{font-size:12px; color:var(--ink-soft); max-width:360px;}
+
+  .kpi-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(200px,1fr)); gap:14px;
+    padding:18px 0 6px;
+  }
+  .kpi-tile{background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:18px 20px;}
+  .kpi-label{font-size:12px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em;}
+  .kpi-value{font-family:var(--sans); font-size:30px; font-weight:700; margin-top:6px; color:var(--ink);}
+
+  .charts-grid{display:grid; grid-template-columns:1fr; gap:16px; padding:20px 0 70px;}
+  @media(min-width:860px){ .charts-grid{grid-template-columns:1fr 1fr;} .chart-card.wide{grid-column:1 / -1;} }
+
+  .chart-card{
+    background:var(--viz-surface); border:1px solid var(--line); border-radius:16px;
+    padding:20px 22px 18px;
+  }
+  .chart-card h2{font-size:16px; margin-bottom:2px;}
+  .chart-sub{font-size:12px; color:var(--viz-muted); margin-bottom:14px;}
+  .chart-head{display:flex; align-items:flex-start; justify-content:space-between; gap:10px;}
+  .table-toggle-btn{
+    font-family:var(--sans); font-size:11.5px; font-weight:600; color:var(--viz-text-soft);
+    background:transparent; border:1px solid var(--viz-grid); border-radius:999px;
+    padding:5px 12px; cursor:pointer; white-space:nowrap;
+  }
+  .table-toggle-btn:hover{border-color:var(--viz-muted);}
+
+  .chart-svg-wrap svg{width:100%; height:auto; display:block; overflow:visible;}
+  .chart-legend{display:flex; gap:16px; flex-wrap:wrap; margin-top:10px;}
+  .legend-item{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--viz-text-soft); font-weight:600;}
+  .legend-swatch{width:10px; height:10px; border-radius:3px; flex-shrink:0;}
+
+  .data-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .data-table th, .data-table td{text-align:left; padding:7px 10px; border-bottom:1px solid var(--viz-grid);}
+  .data-table th{color:var(--viz-muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.02em;}
+  .data-table td{color:var(--viz-text);}
+  .data-table td.num, .data-table th.num{text-align:right; font-variant-numeric:tabular-nums;}
+
+  .viz-hit{fill:transparent; cursor:pointer;}
+  .viz-tooltip{
+    position:fixed; z-index:60; pointer-events:none; background:var(--night); color:#fff;
+    font-family:var(--sans); font-size:12px; padding:8px 11px; border-radius:9px; line-height:1.5;
+    box-shadow:0 8px 22px rgba(0,0,0,0.25); opacity:0; transition:opacity .1s; max-width:220px;
+  }
+  .viz-tooltip.show{opacity:1;}
+  .viz-tooltip .tt-title{font-weight:700; margin-bottom:2px;}
+  .viz-tooltip .tt-row{display:flex; align-items:center; gap:6px;}
+  .viz-tooltip .tt-dot{width:8px; height:8px; border-radius:2px; flex-shrink:0;}
+
+  .empty-note{font-size:13px; padding:30px 0; text-align:center; color:var(--viz-muted);}
+</style>
+</head>
+<body>
+
+<!-- ============ CONFIGURACIÓN (misma que las demás páginas) ============ -->
+<script>
+  const SUPABASE_URL = "https://gyqqrfvdivlplghnboqb.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5cXFyZnZkaXZscGxnaG5ib3FiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwNjAyMDEsImV4cCI6MjEwMTYzNjIwMX0.5BEtTrA3BvsAO5daypauQgSXIYtOk7MOuMIzt0UpqWQ";
+  const DEMO_MODE = SUPABASE_URL.includes("TU_PROJECT_URL_AQUI");
+</script>
+
+<header>
+  <div class="container">
+    <a href="creallab-landing.html" class="brand-name">CRE<span class="all">ALL</span>AB <span style="font-size:12px; font-weight:600; color:var(--ink-soft);">· panel de marca</span></a>
+    <div class="header-actions">
+      <a href="creallab-portal.html" class="btn btn-ghost">Mi cuenta</a>
+      <button type="button" class="btn btn-ghost hidden" id="btn-logout">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<!-- ============ ACCESO (login) ============ -->
+<div class="gate-wrap" id="view-login">
+  <div class="gate-card">
+    <h1>Panel de marca</h1>
+    <p>Solo tu cuenta de administrador puede ver esto. Inicia sesión con la misma cuenta que usas en "Mi cuenta".</p>
+    <form id="login-form">
+      <div class="field">
+        <label for="li-email">Correo</label>
+        <input type="email" id="li-email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="li-password">Contraseña</label>
+        <input type="password" id="li-password" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-clay gate-submit" id="li-submit">Entrar</button>
+      <p class="gate-msg" id="li-msg"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ============ ACCESO DENEGADO ============ -->
+<div class="gate-wrap hidden" id="view-denied">
+  <div class="gate-card" style="text-align:center;">
+    <div class="denied-icon">🔒</div>
+    <h1>No autorizado</h1>
+    <p>Tu cuenta inició sesión, pero no tiene acceso al panel de marca. Solo el administrador puede verlo.</p>
+    <button type="button" class="btn btn-ghost" id="btn-logout-denied">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- ============ DASHBOARD ============ -->
+<div class="hidden" id="view-dashboard">
+  <section class="dash-hero">
+    <div class="container">
+      <h1>Evolución de la marca</h1>
+      <p>Comunidad, niveles, ventas y actividad de CREALLAB — solo tú puedes ver estos números.</p>
+      <div class="snapshot-row">
+        <button type="button" class="btn btn-ghost" id="btn-download-snapshot">⬇ Descargar snapshot semanal (.csv)</button>
+        <span class="snapshot-hint">Para tu registro en Excel — súbelo cada semana a la carpeta "CREALLAB" de tu Drive.</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <div class="charts-grid">
+      <div class="chart-card wide" id="chart-comunidad">
+        <div class="chart-head">
+          <div>
+            <h2>Crecimiento de comunidad</h2>
+            <p class="chart-sub">Miembros nuevos, seguidores nuevos y membresías nuevas — últimos 6 meses.</p>
+          </div>
+          <button type="button" class="table-toggle-btn" data-target="chart-comunidad">Ver como tabla</button>
+        </div>
+        <div class="chart-svg-wrap"></div>
+        <div class="chart-legend"></div>
+        <div class="chart-table-wrap hidden"></div>
+      </div>
+
+      <div class="chart-card" id="chart-niveles">
+        <div class="chart-head">
+          <div>
+            <h2>Niveles hoy</h2>
+            <p class="chart-sub">Cuántos miembros hay en cada nivel, ahora mismo.</p>
+          </div>
+          <button type="button" class="table-toggle-btn" data-target="chart-niveles">Ver como tabla</button>
+        </div>
+        <div class="chart-svg-wrap"></div>
+        <div class="chart-table-wrap hidden"></div>
+      </div>
+
+      <div class="chart-card" id="chart-ingresos">
+        <div class="chart-head">
+          <div>
+            <h2>Ingresos por mes</h2>
+            <p class="chart-sub">Ventas confirmadas — últimos 6 meses.</p>
+          </div>
+          <button type="button" class="table-toggle-btn" data-target="chart-ingresos">Ver como tabla</button>
+        </div>
+        <div class="chart-svg-wrap"></div>
+        <div class="chart-table-wrap hidden"></div>
+      </div>
+
+      <div class="chart-card wide" id="chart-actividad">
+        <div class="chart-head">
+          <div>
+            <h2>Actividad de la comunidad</h2>
+            <p class="chart-sub">Puntos otorgados, obras publicadas y premios entregados — últimos 6 meses.</p>
+          </div>
+          <button type="button" class="table-toggle-btn" data-target="chart-actividad">Ver como tabla</button>
+        </div>
+        <div class="chart-svg-wrap"></div>
+        <div class="chart-legend"></div>
+        <div class="chart-table-wrap hidden"></div>
+      </div>
+
+      <div class="chart-card wide" id="chart-productos">
+        <div class="chart-head">
+          <div>
+            <h2>Productos más vendidos</h2>
+            <p class="chart-sub">Por ingresos confirmados, de mayor a menor.</p>
+          </div>
+          <button type="button" class="table-toggle-btn" data-target="chart-productos">Ver como tabla</button>
+        </div>
+        <div class="chart-svg-wrap"></div>
+        <div class="chart-table-wrap hidden"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="viz-tooltip" id="viz-tooltip"></div>
+
+<script>
+(function(){
+  const $ = (sel, root) => (root || document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+  function money(n){
+    return "S/ " + Number(n || 0).toLocaleString("es-PE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function compact(n){
+    return Number(n || 0).toLocaleString("es-PE");
+  }
+
+  // ---------- ventana de meses (últimos 6, terminando en el actual) ----------
+  const MES_ABR = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+  function monthWindow(n){
+    const out = [];
+    const now = new Date();
+    for (let i = n - 1; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+      out.push({ key, label: MES_ABR[d.getMonth()] + " '" + String(d.getFullYear()).slice(2) });
+    }
+    return out;
+  }
+  function mesKey(dateStr){
+    if (!dateStr) return null;
+    return String(dateStr).slice(0, 7);
+  }
+  function alignToWindow(rows, win, valField, mesField){
+    mesField = mesField || "mes";
+    const byKey = {};
+    (rows || []).forEach(r => { byKey[mesKey(r[mesField])] = Number(r[valField]) || 0; });
+    return win.map(w => byKey[w.key] || 0);
+  }
+
+  // ---------- tooltip compartido ----------
+  const ttEl = $("#viz-tooltip");
+  function showTooltip(x, y, html){
+    ttEl.innerHTML = html;
+    ttEl.style.left = (x + 14) + "px";
+    ttEl.style.top = (y + 14) + "px";
+    ttEl.classList.add("show");
+  }
+  function hideTooltip(){ ttEl.classList.remove("show"); }
+
+  // ---------- helpers de tabla ----------
+  function renderTable(container, headers, rows){
+    const thead = "<thead><tr>" + headers.map((h,i) => `<th${i>0?' class="num"':''}>${h}</th>`).join("") + "</tr></thead>";
+    const tbody = "<tbody>" + rows.map(r => "<tr>" + r.map((c,i) => `<td${i>0?' class="num"':''}>${c}</td>`).join("") + "</tr>").join("") + "</tbody>";
+    container.innerHTML = `<table class="data-table">${thead}${tbody}</table>`;
+  }
+
+  $$(".table-toggle-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const card = document.getElementById(btn.dataset.target);
+      const svgWrap = $(".chart-svg-wrap", card);
+      const legend = $(".chart-legend", card);
+      const tableWrap = $(".chart-table-wrap", card);
+      const showingTable = !tableWrap.classList.contains("hidden");
+      if (showingTable){
+        tableWrap.classList.add("hidden");
+        svgWrap.classList.remove("hidden");
+        if (legend) legend.classList.remove("hidden");
+        btn.textContent = "Ver como tabla";
+      } else {
+        tableWrap.classList.remove("hidden");
+        svgWrap.classList.add("hidden");
+        if (legend) legend.classList.add("hidden");
+        btn.textContent = "Ver como gráfico";
+      }
+    });
+  });
+
+  // ---------- gráfico de líneas (1–3 series) ----------
+  function lineChart(container, opts){
+    const W = 640, H = 240, padL = 40, padR = 16, padT = 16, padB = 28;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const n = opts.labels.length;
+    const maxVal = Math.max(1, ...opts.series.flatMap(s => s.values)) * 1.18;
+    const stepX = n > 1 ? plotW / (n - 1) : 0;
+    const yFor = v => padT + plotH - (v / maxVal) * plotH;
+    const xFor = i => padL + stepX * i;
+
+    const ticks = 4;
+    let gridSvg = "";
+    for (let t = 0; t <= ticks; t++){
+      const val = (maxVal / ticks) * t;
+      const y = yFor(val);
+      gridSvg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--viz-grid)" stroke-width="1"/>`;
+      gridSvg += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10.5" fill="var(--viz-muted)" font-family="var(--sans)">${compact(Math.round(val))}</text>`;
+    }
+    let axisSvg = `<line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="var(--viz-baseline)" stroke-width="1"/>`;
+    opts.labels.forEach((lab, i) => {
+      axisSvg += `<text x="${xFor(i)}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--viz-muted)" font-family="var(--sans)">${lab}</text>`;
+    });
+
+    let seriesSvg = "";
+    let hitSvg = "";
+    opts.series.forEach(s => {
+      const pts = s.values.map((v, i) => [xFor(i), yFor(v)]);
+      if (opts.area && opts.series.length === 1){
+        const areaPts = `${pts.map(p => p.join(",")).join(" ")} ${xFor(n-1)},${padT+plotH} ${xFor(0)},${padT+plotH}`;
+        seriesSvg += `<polygon points="${areaPts}" fill="${s.color}" opacity="0.10"/>`;
+      }
+      seriesSvg += `<polyline points="${pts.map(p => p.join(",")).join(" ")}" fill="none" stroke="${s.color}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+      pts.forEach((p, i) => {
+        seriesSvg += `<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${s.color}" stroke="var(--viz-surface)" stroke-width="2"/>`;
+        hitSvg += `<circle class="viz-hit" cx="${p[0]}" cy="${p[1]}" r="11" data-i="${i}" data-s="${s.label}" data-v="${s.values[i]}" data-c="${s.color}"/>`;
+      });
+    });
+
+    container.querySelector(".chart-svg-wrap").innerHTML =
+      `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${gridSvg}${axisSvg}${seriesSvg}<g>${hitSvg}</g></svg>`;
+
+    const legendEl = container.querySelector(".chart-legend");
+    if (legendEl){
+      legendEl.innerHTML = opts.series.length > 1
+        ? opts.series.map(s => `<span class="legend-item"><span class="legend-swatch" style="background:${s.color}"></span>${s.label}</span>`).join("")
+        : "";
+    }
+
+    $$(".viz-hit", container).forEach(hit => {
+      hit.addEventListener("mouseenter", (e) => {
+        const i = +hit.dataset.i;
+        const rows = opts.series.map(s => `<div class="tt-row"><span class="tt-dot" style="background:${s.color}"></span>${s.label}: ${opts.formatY ? opts.formatY(s.values[i]) : s.values[i]}</div>`).join("");
+        showTooltip(e.clientX, e.clientY, `<div class="tt-title">${opts.labels[i]}</div>${rows}`);
+      });
+      hit.addEventListener("mousemove", (e) => { ttEl.style.left = (e.clientX + 14) + "px"; ttEl.style.top = (e.clientY + 14) + "px"; });
+      hit.addEventListener("mouseleave", hideTooltip);
+    });
+
+    const tableWrap = container.querySelector(".chart-table-wrap");
+    if (tableWrap){
+      const headers = ["Mes", ...opts.series.map(s => s.label)];
+      const rows = opts.labels.map((lab, i) => [lab, ...opts.series.map(s => opts.formatY ? opts.formatY(s.values[i]) : s.values[i])]);
+      renderTable(tableWrap, headers, rows);
+    }
+  }
+
+  // ---------- gráfico de barras (verticalú horizontal) ----------
+  function barChart(container, opts){
+    const horizontal = !!opts.horizontal;
+    const n = opts.labels.length;
+    if (!n){
+      container.querySelector(".chart-svg-wrap").innerHTML = `<p class="empty-note">Todavía no hay datos para mostrar.</p>`;
+      const tw = container.querySelector(".chart-table-wrap");
+      if (tw) renderTable(tw, [opts.labelHeader || "Categoría", opts.valueLabel || "Valor"], []);
+      return;
+    }
+    const maxVal = Math.max(1, ...opts.values) * 1.15;
+    let svg = "";
+
+    if (!horizontal){
+      const W = 640, H = 240, padL = 40, padR = 16, padT = 16, padB = 28;
+      const plotW = W - padL - padR, plotH = H - padT - padB;
+      const slot = plotW / n;
+      const barW = Math.min(24, slot * 0.5);
+      const ticks = 4;
+      for (let t = 0; t <= ticks; t++){
+        const val = (maxVal / ticks) * t;
+        const y = padT + plotH - (val / maxVal) * plotH;
+        svg += `<line x1="${padL}" y1="${y}" x2="${W - padR}" y2="${y}" stroke="var(--viz-grid)" stroke-width="1"/>`;
+        svg += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" font-size="10.5" fill="var(--viz-muted)" font-family="var(--sans)">${compact(Math.round(val))}</text>`;
+      }
+      svg += `<line x1="${padL}" y1="${padT + plotH}" x2="${W - padR}" y2="${padT + plotH}" stroke="var(--viz-baseline)" stroke-width="1"/>`;
+      let hitSvg = "";
+      opts.labels.forEach((lab, i) => {
+        const cx = padL + slot * i + slot / 2;
+        const v = opts.values[i];
+        const barH = (v / maxVal) * plotH;
+        const y = padT + plotH - barH;
+        const color = Array.isArray(opts.colors) ? opts.colors[i] : opts.colors;
+        svg += `<rect x="${cx - barW/2}" y="${y}" width="${barW}" height="${Math.max(barH,1)}" rx="4" fill="${color}"/>`;
+        svg += `<text x="${cx}" y="${H - 6}" text-anchor="middle" font-size="10.5" fill="var(--viz-muted)" font-family="var(--sans)">${lab}</text>`;
+        hitSvg += `<rect class="viz-hit" x="${cx - slot/2}" y="${padT}" width="${slot}" height="${plotH}" data-i="${i}"/>`;
+      });
+      svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${svg}<g>${hitSvg}</g></svg>`;
+      container.querySelector(".chart-svg-wrap").innerHTML = svg;
+    } else {
+      const rowH = 34, padL = 8, padR = 92, padT = 8, labelW = 150;
+      const W = 640, H = padT * 2 + rowH * n;
+      const plotW = W - padL - padR - labelW;
+      opts.labels.forEach((lab, i) => {
+        const v = opts.values[i];
+        const barW2 = Math.max((v / maxVal) * plotW, 2);
+        const y = padT + i * rowH;
+        const color = Array.isArray(opts.colors) ? opts.colors[i] : opts.colors;
+        svg += `<text x="${labelW - 10}" y="${y + rowH/2 + 4}" text-anchor="end" font-size="12" fill="var(--viz-text)" font-family="var(--sans)" font-weight="600">${lab}</text>`;
+        svg += `<rect x="${labelW}" y="${y + 6}" width="${barW2}" height="22" rx="4" fill="${color}"/>`;
+        svg += `<text x="${labelW + barW2 + 8}" y="${y + rowH/2 + 4}" font-size="12" fill="var(--viz-text-soft)" font-family="var(--sans)">${opts.formatY ? opts.formatY(v) : v}</text>`;
+        svg += `<rect class="viz-hit" x="${labelW}" y="${y}" width="${plotW + padR}" height="${rowH}" data-i="${i}"/>`;
+      });
+      container.querySelector(".chart-svg-wrap").innerHTML = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">${svg}</svg>`;
+    }
+
+    $$(".viz-hit", container).forEach(hit => {
+      hit.addEventListener("mouseenter", (e) => {
+        const i = +hit.dataset.i;
+        const val = opts.formatY ? opts.formatY(opts.values[i]) : opts.values[i];
+        showTooltip(e.clientX, e.clientY, `<div class="tt-title">${opts.labels[i]}</div>${opts.valueLabel || "Valor"}: ${val}`);
+      });
+      hit.addEventListener("mousemove", (e) => { ttEl.style.left = (e.clientX + 14) + "px"; ttEl.style.top = (e.clientY + 14) + "px"; });
+      hit.addEventListener("mouseleave", hideTooltip);
+    });
+
+    const tableWrap = container.querySelector(".chart-table-wrap");
+    if (tableWrap){
+      renderTable(tableWrap, [opts.labelHeader || "Categoría", opts.valueLabel || "Valor"],
+        opts.labels.map((lab, i) => [lab, opts.formatY ? opts.formatY(opts.values[i]) : opts.values[i]]));
+    }
+  }
+
+  // ---------- render principal ----------
+  function renderDashboard(data){
+    const win = monthWindow(6);
+    const labels = win.map(w => w.label);
+
+    // KPIs
+    const kpis = [
+      { label: "Miembros totales", value: compact(data.resumen.total_miembros) },
+      { label: "Seguidores", value: compact(data.resumen.total_seguidores) },
+      { label: "Ingresos totales", value: money(data.resumen.ingresos_totales) },
+      { label: "Membresías activas ahora", value: compact(data.resumen.membresias_activas_ahora) },
+    ];
+    $("#kpi-grid").innerHTML = kpis.map(k => `
+      <div class="kpi-tile">
+        <div class="kpi-label">${k.label}</div>
+        <div class="kpi-value">${k.value}</div>
+      </div>`).join("");
+
+    // Crecimiento de comunidad
+    lineChart(document.getElementById("chart-comunidad"), {
+      labels,
+      series: [
+        { label: "Miembros nuevos", color: "var(--viz-1)", values: alignToWindow(data.evolucion_miembros, win, "nuevos") },
+        { label: "Seguidores nuevos", color: "var(--viz-2)", values: alignToWindow(data.evolucion_seguidores, win, "nuevos") },
+        { label: "Membresías nuevas", color: "var(--viz-3)", values: alignToWindow(data.evolucion_membresias, win, "nuevas") },
+      ],
+      formatY: v => compact(v),
+    });
+
+    // Niveles hoy
+    const nivelOrden = ["explorador","creador","mentor","nodo"];
+    const nivelLabel = { explorador:"Explorador", creador:"Creador", mentor:"Mentor", nodo:"Nodo" };
+    const nivelColores = ["var(--viz-ord-1)","var(--viz-ord-2)","var(--viz-ord-3)","var(--viz-ord-4)"];
+    const nivelPorClave = {};
+    (data.distribucion_niveles || []).forEach(r => { nivelPorClave[r.nivel] = Number(r.total) || 0; });
+    barChart(document.getElementById("chart-niveles"), {
+      labels: nivelOrden.map(k => nivelLabel[k]),
+      values: nivelOrden.map(k => nivelPorClave[k] || 0),
+      colors: nivelColores,
+      valueLabel: "Miembros",
+      formatY: v => compact(v),
+    });
+
+    // Ingresos por mes
+    lineChart(document.getElementById("chart-ingresos"), {
+      labels,
+      series: [{ label: "Ingresos", color: "var(--viz-1)", values: alignToWindow(data.evolucion_ventas, win, "ingresos") }],
+      area: true,
+      formatY: v => money(v),
+    });
+
+    // Actividad de la comunidad
+    const actPorTipo = { puntos: [], obras: [], premios: [] };
+    ["puntos","obras","premios"].forEach(tipo => {
+      const filas = (data.evolucion_actividad || []).filter(r => r.tipo === tipo);
+      actPorTipo[tipo] = alignToWindow(filas, win, "total");
+    });
+    lineChart(document.getElementById("chart-actividad"), {
+      labels,
+      series: [
+        { label: "Puntos otorgados", color: "var(--viz-1)", values: actPorTipo.puntos },
+        { label: "Obras publicadas", color: "var(--viz-2)", values: actPorTipo.obras },
+        { label: "Premios entregados", color: "var(--viz-3)", values: actPorTipo.premios },
+      ],
+      formatY: v => compact(v),
+    });
+
+    // Productos más vendidos
+    const top = (data.top_productos || []).slice(0, 5);
+    barChart(document.getElementById("chart-productos"), {
+      horizontal: true,
+      labels: top.map(p => p.nombre),
+      values: top.map(p => Number(p.ingresos) || 0),
+      colors: "var(--viz-1)",
+      valueLabel: "Ingresos",
+      labelHeader: "Producto",
+      formatY: v => money(v),
+    });
+  }
+
+  // ---------- MODO DEMO ----------
+  function buildMockData(){
+    const win = monthWindow(6);
+    const seq = (arr) => win.map((w, i) => ({ mes: w.key + "-01", val: arr[i] }));
+    const miembros = seq([1,2,1,3,2,4]).map(r => ({ mes: r.mes, nuevos: r.val }));
+    const seguidores = seq([3,4,2,5,6,7]).map(r => ({ mes: r.mes, nuevos: r.val }));
+    const membresias = seq([0,1,1,2,1,3]).map(r => ({ mes: r.mes, nuevas: r.val }));
+    const ventas = seq([180,240,150,320,410,505]).map(r => ({ mes: r.mes, ingresos: r.val }));
+    const puntos = seq([2,3,2,5,4,6]).map(r => ({ tipo: "puntos", mes: r.mes, total: r.val }));
+    const obras = seq([1,2,1,3,2,4]).map(r => ({ tipo: "obras", mes: r.mes, total: r.val }));
+    const premios = seq([0,1,0,1,2,2]).map(r => ({ tipo: "premios", mes: r.mes, total: r.val }));
+    return {
+      resumen: { total_miembros: 24, total_seguidores: 41, ingresos_totales: 3860, membresias_activas_ahora: 6 },
+      evolucion_miembros: miembros,
+      evolucion_seguidores: seguidores,
+      evolucion_membresias: membresias,
+      evolucion_ventas: ventas,
+      evolucion_actividad: [...puntos, ...obras, ...premios],
+      distribucion_niveles: [
+        { nivel:"explorador", total:14 }, { nivel:"creador", total:6 },
+        { nivel:"mentor", total:3 }, { nivel:"nodo", total:1 },
+      ],
+      top_productos: [
+        { nombre:"Chuspa roja edición limitada", categoria:"OBRAS", ventas:9, ingresos:1620 },
+        { nombre:"Grabado en linóleo — nivel 1", categoria:"CURSOS", ventas:7, ingresos:840 },
+        { nombre:"Prensa CHUSPA Mini", categoria:"HERRAMIENTAS Y MATERIALES", ventas:2, ingresos:900 },
+        { nombre:"Tinte natural de cochinilla", categoria:"HERRAMIENTAS Y MATERIALES", ventas:5, ingresos:350 },
+        { nombre:"Taller ALLquimia — pigmentos", categoria:"CURSOS", ventas:2, ingresos:150 },
+      ],
+    };
+  }
+
+  function showView(name){
+    ["login","denied","dashboard"].forEach(v => {
+      document.getElementById("view-" + v).classList.toggle("hidden", v !== name);
+    });
+    $("#btn-logout").classList.toggle("hidden", name === "login");
+  }
+
+  // ---------- snapshot semanal (.csv) para el registro en Excel/Drive ----------
+  function downloadCsv(filename, headers, row){
+    const csv = headers.join(",") + "\n" + row.map(v => {
+      const s = String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }).join(",") + "\n";
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+  const SNAPSHOT_HEADERS = ["fecha","miembros_totales","seguidores_totales","explorador","creador","mentor","nodo","membresias_activas_ahora","ingresos_totales_acumulados"];
+  function snapshotRowFromDashboardData(data){
+    const niv = {};
+    (data.distribucion_niveles || []).forEach(r => { niv[r.nivel] = Number(r.total) || 0; });
+    const today = new Date().toISOString().slice(0, 10);
+    return [
+      today, data.resumen.total_miembros || 0, data.resumen.total_seguidores || 0,
+      niv.explorador || 0, niv.creador || 0, niv.mentor || 0, niv.nodo || 0,
+      data.resumen.membresias_activas_ahora || 0, data.resumen.ingresos_totales || 0,
+    ];
+  }
+
+  if (DEMO_MODE){
+    showView("dashboard");
+    const mockData = buildMockData();
+    renderDashboard(mockData);
+    $("#btn-download-snapshot").addEventListener("click", () => {
+      downloadCsv("snapshot_semanal.csv", SNAPSHOT_HEADERS, snapshotRowFromDashboardData(mockData));
+    });
+    $("#btn-logout").addEventListener("click", () => location.reload());
+    $("#btn-logout-denied").addEventListener("click", () => location.reload());
+  } else {
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function loadPanelData(){
+      const [
+        { data: resumenRows }, { data: evMiembros }, { data: evSeguidores },
+        { data: distNiveles }, { data: evVentas }, { data: evMembresias },
+        { data: evActividad }, { data: topProd },
+      ] = await Promise.all([
+        supabase.from("resumen_hoy").select("*"),
+        supabase.from("evolucion_miembros").select("*"),
+        supabase.from("evolucion_seguidores").select("*"),
+        supabase.from("distribucion_niveles").select("*"),
+        supabase.from("evolucion_ventas").select("*"),
+        supabase.from("evolucion_membresias").select("*"),
+        supabase.from("evolucion_actividad").select("*"),
+        supabase.from("top_productos").select("*"),
+      ]);
+      return {
+        resumen: (resumenRows && resumenRows[0]) || { total_miembros:0, total_seguidores:0, ingresos_totales:0, membresias_activas_ahora:0 },
+        evolucion_miembros: evMiembros || [],
+        evolucion_seguidores: evSeguidores || [],
+        distribucion_niveles: distNiveles || [],
+        evolucion_ventas: evVentas || [],
+        evolucion_membresias: evMembresias || [],
+        evolucion_actividad: evActividad || [],
+        top_productos: topProd || [],
+      };
+    }
+
+    async function afterAuth(user){
+      const { data: profile } = await supabase.from("profiles").select("es_admin").eq("id", user.id).maybeSingle();
+      if (!profile || !profile.es_admin){
+        showView("denied");
+        return;
+      }
+      const data = await loadPanelData();
+      showView("dashboard");
+      renderDashboard(data);
+    }
+
+    $("#btn-download-snapshot").addEventListener("click", async () => {
+      const { data: rows, error } = await supabase.from("snapshot_semanal").select("*");
+      if (error || !rows || !rows[0]) { alert("No se pudo generar el snapshot: " + (error ? error.message : "sin datos")); return; }
+      const r = rows[0];
+      downloadCsv("snapshot_semanal.csv", SNAPSHOT_HEADERS,
+        SNAPSHOT_HEADERS.map(h => r[h]));
+    });
+
+    const form = $("#login-form");
+    const msgEl = $("#li-msg");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      msgEl.textContent = ""; msgEl.className = "gate-msg";
+      $("#li-submit").disabled = true;
+      const email = $("#li-email").value.trim();
+      const password = $("#li-password").value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      $("#li-submit").disabled = false;
+      if (error){ msgEl.textContent = error.message; msgEl.className = "gate-msg error"; return; }
+      if (data.user){
+        try { await afterAuth(data.user); }
+        catch (err) { msgEl.textContent = "No se pudo cargar el panel: " + err.message; msgEl.className = "gate-msg error"; }
+      }
+    });
+
+    async function doLogout(){ await supabase.auth.signOut(); showView("login"); }
+    $("#btn-logout").addEventListener("click", doLogout);
+    $("#btn-logout-denied").addEventListener("click", doLogout);
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session && session.user){
+        afterAuth(session.user).catch(err => {
+          msgEl.textContent = "No se pudo cargar el panel: " + err.message;
+          msgEl.className = "gate-msg error";
+        });
+      }
+    });
+  }
+})();
+</script>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>
