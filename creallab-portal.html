@@ -161,6 +161,18 @@
   .empty{font-size:13px; color:var(--ink-soft); font-style:italic;}
   .card.wide{grid-column:1 / -1;}
 
+  /* ---------- tus métricas ---------- */
+  .metricas-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:12px; margin-bottom:16px;}
+  .metrica-tile{background:var(--paper-2); border-radius:12px; padding:14px 16px;}
+  .metrica-label{font-size:11px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.03em;}
+  .metrica-value{font-family:var(--sans); font-size:22px; font-weight:700; margin-top:5px; color:var(--ink);}
+  .metricas-top h3{font-size:12.5px; font-weight:700; margin:4px 0 8px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.02em;}
+  .metrica-prod-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .metrica-prod-row:last-child{border-bottom:none;}
+  .metrica-prod-row .mp-rank{color:var(--ink-soft); font-weight:700; width:18px; flex-shrink:0;}
+  .metrica-prod-row .mp-name{flex:1;}
+  .metrica-prod-row .mp-amount{font-weight:700; font-variant-numeric:tabular-nums;}
+
   /* ---------- nivel / puntos ---------- */
   .level-badge{
     display:flex; align-items:center; gap:10px; padding:8px 14px;
@@ -440,6 +452,13 @@
         <a href="creallab-admin.html" class="btn btn-primary">Seguir como admin →</a>
       </div>
 
+      <div class="card wide" id="card-metricas">
+        <h2><span class="dot"></span>Tus métricas</h2>
+        <p class="mundos-note">Un resumen de tu actividad como vendedor en CREALLAB — se arma solo con tus ventas y productos.</p>
+        <div class="metricas-grid" id="metricas-grid"></div>
+        <div class="metricas-top" id="metricas-top-wrap"></div>
+      </div>
+
       <div class="card wide" id="card-mundos">
         <h2><span class="dot"></span>Tus mundos de interés</h2>
         <p class="mundos-note">Elige los mundos que más te interesan — no son categorías cerradas, se conectan entre sí dentro del ecosistema ALL. Puedes marcar varios a la vez y cambiarlos cuando quieras.</p>
@@ -667,11 +686,13 @@
       { id:"o1", titulo:"Chuspa roja edición limitada", descripcion:"Tejido a mano, técnica ancestral.", imagen_url:"", mundo:"ALLtaller" },
     ],
     productos: [
-      { id:"pr1", nombre:"Chuspa roja edición limitada", categoria:"OBRAS", tipo:"Tejido", precio:180, estado:"aprobado" },
+      { id:"pr1", nombre:"Chuspa roja edición limitada", categoria:"OBRAS", tipo:"Tejido", precio:180, estado:"aprobado", activo:true },
+      { id:"pr2", nombre:"Grabado en linóleo — nivel 1", categoria:"CURSOS", tipo:"Taller online", precio:120, estado:"aprobado", activo:true },
     ],
     ventas: [
-      { id:"v1", producto_nombre:"Chuspa roja edición limitada", monto:180, medio_pago:"whatsapp", comprador:"Ana R.", estado:"confirmada", comision_pct:10, comision_monto:18, monto_artista:162, liquidado:false },
-      { id:"v2", producto_nombre:"Chuspa roja edición limitada", monto:180, medio_pago:"mercadopago", comprador:"Luis T.", estado:"confirmada", comision_pct:10, comision_monto:18, monto_artista:162, liquidado:false },
+      { id:"v1", producto_nombre:"Chuspa roja edición limitada", producto_categoria:"OBRAS", monto:180, medio_pago:"whatsapp", comprador:"Ana R.", estado:"confirmada", comision_pct:10, comision_monto:18, monto_artista:162, liquidado:false },
+      { id:"v2", producto_nombre:"Chuspa roja edición limitada", producto_categoria:"OBRAS", monto:180, medio_pago:"mercadopago", comprador:"Luis T.", estado:"confirmada", comision_pct:10, comision_monto:18, monto_artista:162, liquidado:false },
+      { id:"v3", producto_nombre:"Grabado en linóleo — nivel 1", producto_categoria:"CURSOS", monto:120, medio_pago:"whatsapp", comprador:"Sofía M.", estado:"confirmada", comision_pct:30, comision_monto:36, monto_artista:84, liquidado:true },
     ],
     conversaciones: [
       {
@@ -881,6 +902,44 @@
         ${v.estado === "pendiente" ? `<button class="venta-del" data-id="${v.id}" type="button">Quitar</button>` : ""}
       </div>`;
     }).join("");
+  }
+
+  function renderMetricas(ventas, productos){
+    const confirmadas = (ventas || []).filter(v => v.estado === "confirmada");
+    const ingresos = confirmadas.reduce((sum, v) => sum + (Number(v.monto_artista) || 0), 0);
+    const alumnos = confirmadas.filter(v => v.producto_categoria === "CURSOS").length;
+    const productosActivos = (productos || []).filter(p => p.estado === "aprobado" && p.activo !== false).length;
+
+    const tiles = [
+      { label: "Ingresos generados", value: money(ingresos) },
+      { label: "Ventas confirmadas", value: confirmadas.length },
+      { label: "Alumnos", value: alumnos },
+      { label: "Productos activos", value: productosActivos },
+    ];
+    $("#metricas-grid").innerHTML = tiles.map(t => `
+      <div class="metrica-tile">
+        <div class="metrica-label">${t.label}</div>
+        <div class="metrica-value">${t.value}</div>
+      </div>`).join("");
+
+    const porProducto = {};
+    confirmadas.forEach(v => {
+      const nombre = v.producto_nombre || "Producto";
+      porProducto[nombre] = (porProducto[nombre] || 0) + (Number(v.monto) || 0);
+    });
+    const top = Object.entries(porProducto).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    const topWrap = $("#metricas-top-wrap");
+    if (!top.length) {
+      topWrap.innerHTML = '<p class="empty">Aún no tienes ventas confirmadas para mostrar tus productos más vendidos.</p>';
+      return;
+    }
+    topWrap.innerHTML = '<h3>Tus productos más vendidos</h3>' +
+      top.map(([nombre, monto], i) => `
+        <div class="metrica-prod-row">
+          <span class="mp-rank">${i + 1}</span>
+          <span class="mp-name">${nombre}</span>
+          <span class="mp-amount">${money(monto)}</span>
+        </div>`).join("");
   }
 
   function horaConv(iso){
@@ -1178,6 +1237,7 @@
       renderProductos(MOCK.productos);
       renderVentaProductoOptions(MOCK.productos);
       renderVentas(MOCK.ventas);
+      renderMetricas(MOCK.ventas, MOCK.productos);
       renderConversaciones(MOCK.conversaciones);
       renderMisConversaciones(MOCK.misConversaciones);
       renderPerfilPublicoForm(MOCK.profile);
@@ -1240,6 +1300,7 @@
         estado: "pendiente",
       });
       renderProductos(MOCK.productos);
+      renderMetricas(MOCK.ventas, MOCK.productos);
       ["#prod-nombre","#prod-tipo","#prod-precio","#prod-formato","#prod-imagen","#prod-descripcion"].forEach(sel => $(sel).value = "");
       $("#prod-mundo").value = "";
       $("#producto-msg").textContent = "Publicado, pendiente de revisión (modo demo) ✓";
@@ -1250,6 +1311,7 @@
       MOCK.productos = MOCK.productos.filter(p => p.id !== e.target.dataset.id);
       renderProductos(MOCK.productos);
       renderVentaProductoOptions(MOCK.productos);
+      renderMetricas(MOCK.ventas, MOCK.productos);
     });
     $("#btn-reportar-venta").addEventListener("click", () => {
       const productoId = $("#venta-producto").value;
@@ -1262,6 +1324,7 @@
       MOCK.ventas.push({
         id: "v" + (MOCK.ventas.length + 1),
         producto_nombre: producto ? producto.nombre : "Producto",
+        producto_categoria: producto ? producto.categoria : "OBRAS",
         monto,
         medio_pago: $("#venta-medio").value,
         comprador: $("#venta-comprador").value.trim(),
@@ -1273,6 +1336,7 @@
         liquidado: false,
       });
       renderVentas(MOCK.ventas);
+      renderMetricas(MOCK.ventas, MOCK.productos);
       ["#venta-monto","#venta-comprador","#venta-notas"].forEach(sel => $(sel).value = "");
       $("#venta-producto").value = ""; $("#venta-medio").value = "whatsapp";
       $("#venta-msg").textContent = "Reportada, pendiente de confirmación (modo demo) ✓";
@@ -1282,6 +1346,7 @@
       if (!e.target.classList.contains("venta-del")) return;
       MOCK.ventas = MOCK.ventas.filter(v => v.id !== e.target.dataset.id);
       renderVentas(MOCK.ventas);
+      renderMetricas(MOCK.ventas, MOCK.productos);
     });
 
     $("#conversaciones-list").addEventListener("click", (e) => {
@@ -1391,8 +1456,10 @@
     renderProductos(productos);
     renderVentaProductoOptions(productos);
 
-    const { data: ventas } = await supabase.from("ventas").select("*, productos(nombre)").eq("member_id", user.id).order("fecha_reportada", { ascending:false });
-    renderVentas((ventas || []).map(v => ({ ...v, producto_nombre: v.productos && v.productos.nombre })));
+    const { data: ventas } = await supabase.from("ventas").select("*, productos(nombre, categoria)").eq("member_id", user.id).order("fecha_reportada", { ascending:false });
+    const ventasConCategoria = (ventas || []).map(v => ({ ...v, producto_nombre: v.productos && v.productos.nombre, producto_categoria: v.productos && v.productos.categoria }));
+    renderVentas(ventasConCategoria);
+    renderMetricas(ventasConCategoria, productos);
 
     await cargarConversaciones();
     await cargarMisConversaciones();
@@ -1514,6 +1581,7 @@
     const { data: productos } = await supabase.from("productos").select("*").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
     renderProductos(productos);
     renderVentaProductoOptions(productos);
+    await cargarVentas();
     msgEl.textContent = "Publicado, pendiente de revisión ✓";
     setTimeout(() => { msgEl.textContent = ""; }, 3000);
   });
@@ -1524,11 +1592,17 @@
     const { data: productos } = await supabase.from("productos").select("*").eq("member_id", currentUser.id).order("creado_en", { ascending:false });
     renderProductos(productos);
     renderVentaProductoOptions(productos);
+    await cargarVentas();
   });
 
   async function cargarVentas(){
-    const { data: ventas } = await supabase.from("ventas").select("*, productos(nombre)").eq("member_id", currentUser.id).order("fecha_reportada", { ascending:false });
-    renderVentas((ventas || []).map(v => ({ ...v, producto_nombre: v.productos && v.productos.nombre })));
+    const [{ data: ventas }, { data: productos }] = await Promise.all([
+      supabase.from("ventas").select("*, productos(nombre, categoria)").eq("member_id", currentUser.id).order("fecha_reportada", { ascending:false }),
+      supabase.from("productos").select("*").eq("member_id", currentUser.id),
+    ]);
+    const ventasConCategoria = (ventas || []).map(v => ({ ...v, producto_nombre: v.productos && v.productos.nombre, producto_categoria: v.productos && v.productos.categoria }));
+    renderVentas(ventasConCategoria);
+    renderMetricas(ventasConCategoria, productos);
   }
 
   $("#btn-reportar-venta").addEventListener("click", async () => {
