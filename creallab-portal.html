@@ -173,6 +173,14 @@
   .metrica-prod-row .mp-name{flex:1;}
   .metrica-prod-row .mp-amount{font-weight:700; font-variant-numeric:tabular-nums;}
 
+  /* ---------- Sé un PRO ---------- */
+  .pro-card{background:linear-gradient(135deg, rgba(215,34,42,0.06), rgba(215,34,42,0.01)); border-color:rgba(215,34,42,0.25);}
+  .pro-status{font-size:13.5px; font-weight:600; color:var(--ink); margin-bottom:12px;}
+  .pro-status.is-active{color:#1A6B33;}
+  .pro-status.is-expired{color:var(--clay);}
+  .pro-perks{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
+  .pro-perk{font-size:11.5px; font-weight:700; letter-spacing:.02em; padding:5px 12px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--ink-soft);}
+
   /* ---------- nivel / puntos ---------- */
   .level-badge{
     display:flex; align-items:center; gap:10px; padding:8px 14px;
@@ -446,6 +454,28 @@
         <div class="nivel-insignias" id="nivel-insignias"></div>
       </div>
 
+      <div class="card wide pro-card" id="card-pro">
+        <h2><span class="dot"></span>Sé un PRO</h2>
+        <p class="pro-status" id="pro-status-note">Cargando…</p>
+        <div class="pro-perks">
+          <span class="pro-perk">Sorteos</span>
+          <span class="pro-perk">Concursos</span>
+          <span class="pro-perk">Pases VIP</span>
+          <span class="pro-perk">Promociones</span>
+        </div>
+        <div class="producto-form">
+          <select id="pro-medio">
+            <option value="whatsapp">Pagué por WhatsApp / directo</option>
+            <option value="mercadopago">Pagué con Mercado Pago</option>
+          </select>
+          <textarea id="pro-notas" class="full" rows="2" placeholder="Notas (opcional)"></textarea>
+          <div class="full">
+            <button id="btn-reportar-pro" class="btn btn-primary" type="button">Reporté mi pago — S/ 25</button>
+            <span class="mundos-msg" id="pro-msg"></span>
+          </div>
+        </div>
+      </div>
+
       <div class="card wide admin-card hidden" id="card-admin">
         <h2><span class="dot"></span>Panel de marca</h2>
         <p class="admin-card-note">Tu cuenta tiene acceso de administrador — ahí ves la evolución de CREALLAB: comunidad, niveles, ventas y actividad.</p>
@@ -487,6 +517,35 @@
       <div class="card wide">
         <h2><span class="dot"></span>Contenido exclusivo de tus mundos</h2>
         <div id="contenido-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card wide">
+        <h2><span class="dot"></span>Sorteos</h2>
+        <p class="mundos-note">Sorteos de la comunidad — exclusivos para miembros PRO.</p>
+        <div id="sorteos-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card wide">
+        <h2><span class="dot"></span>Concursos</h2>
+        <p class="mundos-note">Participa y gana — exclusivos para miembros PRO.</p>
+        <div id="concursos-list"><p class="empty">Cargando…</p></div>
+      </div>
+
+      <div class="card wide" id="card-pases-vip">
+        <h2><span class="dot"></span>Pases VIP</h2>
+        <p class="mundos-note">Actividades creadas por miembros Nodo — exclusivas para PRO.</p>
+        <div id="pases-vip-list"><p class="empty">Cargando…</p></div>
+        <div class="producto-form hidden" id="pase-vip-form-wrap">
+          <input type="text" id="pase-titulo" class="full" placeholder="Título de la actividad">
+          <input type="date" id="pase-fecha">
+          <input type="text" id="pase-lugar" placeholder="Lugar (o link si es virtual)">
+          <input type="number" id="pase-cupo" min="1" placeholder="Cupo (opcional)">
+          <textarea id="pase-descripcion" class="full" rows="2" placeholder="Descripción breve"></textarea>
+          <div class="full">
+            <button id="btn-crear-pase" class="btn btn-ghost" type="button">+ Publicar pase VIP (para revisión)</button>
+            <span class="mundos-msg" id="pase-msg"></span>
+          </div>
+        </div>
       </div>
 
       <div class="card wide">
@@ -664,7 +723,7 @@
   const MOCK = {
     profile: { nombre:"Miembro Ejemplo", fecha_ingreso:"2026-03-14", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:false },
     mundos: ["ALLtaller", "ALLquimia"],
-    puntos: 350, nivel: "creador", alianza_institucional: false, fundador: true, es_admin: true,
+    puntos: 350, nivel: "nodo", alianza_institucional: false, fundador: true, es_admin: true, pro_vencimiento: "2026-09-05",
     nivelesConfig: [
       { nivel:"explorador", puntos_minimos:0,    orden:1 },
       { nivel:"creador",    puntos_minimos:300,  orden:2 },
@@ -716,6 +775,16 @@
       { titulo:"Sesión grabada: taller en vivo de julio", descripcion:"Video, 46 min.", tipo:"contenido" },
       { titulo:"20% en tu próximo taller de ALLquimia", descripcion:"Válido este mes para miembros interesados en este mundo.", tipo:"promocion" },
     ],
+    sorteos: [
+      { id:"s1", titulo:"Kit de tintes naturales", descripcion:"Sorteamos un set completo de tintes de cochinilla y añil.", fecha_cierre:"2026-08-25" },
+    ],
+    concursos: [
+      { id:"c1", titulo:"Concurso de kirigami", premio:"Beca para el próximo taller de ALLquimia", descripcion:"Sube tu pieza con el hashtag #ALLkirigami.", fecha_cierre:"2026-09-01" },
+    ],
+    pasesVip: [
+      { id:"p1", titulo:"Visita a taller de cerámica en Barranco", descripcion:"Actividad presencial con cupo limitado.", fecha:"2026-08-30", lugar:"Barranco, Lima", cupo:15, estado:"aprobado" },
+      { id:"p2", titulo:"Encuentro virtual de tejido ancestral", descripcion:"", fecha:"2026-09-10", lugar:"Zoom", cupo:null, estado:"pendiente" },
+    ],
   };
 
   function showMsg(text, kind){
@@ -762,10 +831,85 @@
       </div>`).join("");
   }
 
-  function renderContenido(list){
+  function renderContenido(list, esPro){
     const todos = list || [];
     renderListaTipo("#contenido-list", todos.filter(c => (c.tipo || "contenido") === "contenido"), "Pronto habrá contenido exclusivo para tus mundos.");
-    renderListaTipo("#promociones-list", todos.filter(c => c.tipo === "promocion"), "No hay promociones activas para tus mundos por ahora.");
+    if (esPro) {
+      renderListaTipo("#promociones-list", todos.filter(c => c.tipo === "promocion"), "No hay promociones activas para tus mundos por ahora.");
+    } else {
+      $("#promociones-list").innerHTML = '<p class="empty">Esto es para miembros PRO — <a href="#card-pro">hazte PRO</a> para verlas.</p>';
+    }
+  }
+
+  // ---------- Sé un PRO ----------
+  function fmtFechaCorta(iso){
+    if (!iso) return "";
+    try { return new Date(iso + "T00:00:00").toLocaleDateString("es-PE", { day:"2-digit", month:"short", year:"numeric" }); }
+    catch(e){ return iso; }
+  }
+
+  function esProVigente(profile){
+    return !!(profile && profile.pro_vencimiento && new Date(profile.pro_vencimiento + "T23:59:59") >= new Date());
+  }
+
+  function renderPro(profile){
+    const el = $("#pro-status-note");
+    const btn = $("#btn-reportar-pro");
+    const activo = esProVigente(profile);
+    if (activo) {
+      el.textContent = `Eres PRO hasta el ${fmtFechaCorta(profile.pro_vencimiento)}.`;
+      el.className = "pro-status is-active";
+      btn.textContent = "Renovar PRO — S/ 25";
+    } else if (profile && profile.pro_vencimiento) {
+      el.textContent = `Tu PRO venció el ${fmtFechaCorta(profile.pro_vencimiento)} — renuévalo para seguir participando.`;
+      el.className = "pro-status is-expired";
+      btn.textContent = "Renovar PRO — S/ 25";
+    } else {
+      el.textContent = "Aún no eres PRO. Hazte PRO para participar en sorteos, concursos, pases VIP y promociones.";
+      el.className = "pro-status";
+      btn.textContent = "Hazte PRO — S/ 25";
+    }
+    return activo;
+  }
+
+  function renderParticipaLista(selector, list, esPro, vacio, itemFn){
+    const el = $(selector);
+    if (!esPro) {
+      el.innerHTML = '<p class="empty">Esto es para miembros PRO — <a href="#card-pro">hazte PRO</a> para participar.</p>';
+      return;
+    }
+    if (!list || !list.length) { el.innerHTML = `<p class="empty">${vacio}</p>`; return; }
+    el.innerHTML = list.map(itemFn).join("");
+  }
+
+  function renderSorteos(list, esPro){
+    renderParticipaLista("#sorteos-list", list, esPro, "Aún no hay sorteos activos.", s => `
+      <div class="row-item" style="display:block;">
+        <div class="producto-item-top"><strong>${s.titulo}</strong>${s.fecha_cierre ? `<span class="pill pendiente">cierra ${fmtFechaCorta(s.fecha_cierre)}</span>` : ""}</div>
+        ${s.descripcion ? `<div class="producto-item-meta">${s.descripcion}</div>` : ""}
+      </div>`);
+  }
+
+  function renderConcursos(list, esPro){
+    renderParticipaLista("#concursos-list", list, esPro, "Aún no hay concursos activos.", c => `
+      <div class="row-item" style="display:block;">
+        <div class="producto-item-top"><strong>${c.titulo}</strong>${c.fecha_cierre ? `<span class="pill pendiente">cierra ${fmtFechaCorta(c.fecha_cierre)}</span>` : ""}</div>
+        ${c.premio ? `<div class="producto-item-meta">Premio: ${c.premio}</div>` : ""}
+        ${c.descripcion ? `<div class="producto-item-meta">${c.descripcion}</div>` : ""}
+      </div>`);
+  }
+
+  function renderPasesVip(list, esPro){
+    renderParticipaLista("#pases-vip-list", list, esPro, "Aún no hay pases VIP publicados.", p => `
+      <div class="row-item" style="display:block;">
+        <div class="producto-item-top"><strong>${p.titulo}</strong><span class="pill ${p.estado}">${p.estado}</span></div>
+        <div class="producto-item-meta">${[p.fecha ? fmtFechaCorta(p.fecha) : "", p.lugar, p.cupo ? `Cupo: ${p.cupo}` : ""].filter(Boolean).join(" · ")}</div>
+        ${p.descripcion ? `<div class="producto-item-meta">${p.descripcion}</div>` : ""}
+      </div>`);
+  }
+
+  function renderPaseVipForm(nivel){
+    $("#pase-vip-form-wrap").classList.toggle("hidden", nivel !== "nodo");
   }
 
   const NIVEL_LABEL = { explorador:"Explorador", creador:"Creador", mentor:"Mentor", nodo:"Nodo" };
@@ -1230,6 +1374,8 @@
       renderMundosPicker(MOCK.mundos);
       renderNivel(MOCK.nivel, MOCK.puntos, MOCK.nivelesConfig, MOCK.alianza_institucional, MOCK.fundador);
       renderAdminCard(MOCK.es_admin);
+      const esProDemo = renderPro(MOCK);
+      renderPaseVipForm(MOCK.nivel);
       renderCursos(MOCK.cursos);
       renderPedidos(MOCK.pedidos);
       renderPremios(MOCK.premios);
@@ -1241,7 +1387,10 @@
       renderConversaciones(MOCK.conversaciones);
       renderMisConversaciones(MOCK.misConversaciones);
       renderPerfilPublicoForm(MOCK.profile);
-      renderContenido(MOCK.contenido);
+      renderContenido(MOCK.contenido, esProDemo);
+      renderSorteos(MOCK.sorteos, esProDemo);
+      renderConcursos(MOCK.concursos, esProDemo);
+      renderPasesVip(MOCK.pasesVip, esProDemo || MOCK.nivel === "nodo");
       showDashboard();
       maybeAutoOpenPerfilModal(MOCK.profile, "demo");
     });
@@ -1349,6 +1498,30 @@
       renderMetricas(MOCK.ventas, MOCK.productos);
     });
 
+    $("#btn-reportar-pro").addEventListener("click", () => {
+      $("#pro-notas").value = ""; $("#pro-medio").value = "whatsapp";
+      $("#pro-msg").textContent = "Reportado, pendiente de confirmación (modo demo) ✓";
+      setTimeout(() => { $("#pro-msg").textContent = ""; }, 3000);
+    });
+
+    $("#btn-crear-pase").addEventListener("click", () => {
+      const titulo = $("#pase-titulo").value.trim();
+      if (!titulo) { $("#pase-msg").textContent = "Ponle un título a la actividad."; return; }
+      MOCK.pasesVip.push({
+        id: "p" + (MOCK.pasesVip.length + 1),
+        titulo,
+        fecha: $("#pase-fecha").value || null,
+        lugar: $("#pase-lugar").value.trim() || null,
+        cupo: parseInt($("#pase-cupo").value, 10) || null,
+        descripcion: $("#pase-descripcion").value.trim() || null,
+        estado: "pendiente",
+      });
+      ["#pase-titulo","#pase-fecha","#pase-lugar","#pase-cupo","#pase-descripcion"].forEach(sel => $(sel).value = "");
+      renderPasesVip(MOCK.pasesVip, esProVigente(MOCK) || MOCK.nivel === "nodo");
+      $("#pase-msg").textContent = "Publicado, pendiente de aprobación (modo demo) ✓";
+      setTimeout(() => { $("#pase-msg").textContent = ""; }, 3000);
+    });
+
     $("#conversaciones-list").addEventListener("click", (e) => {
       const headEl = e.target.closest(".conv-item-head");
       if (headEl) {
@@ -1434,6 +1607,8 @@
     const { data: nivelesConfig } = await supabase.from("niveles_config").select("*").order("orden");
     renderNivel(profile && profile.nivel, puntosTotales, nivelesConfig, profile && profile.alianza_institucional, profile && profile.fundador);
     renderAdminCard(profile && profile.es_admin);
+    const esPro = renderPro(profile || {});
+    renderPaseVipForm(profile && profile.nivel);
 
     const { data: mundosRows } = await supabase.from("member_mundos").select("mundo").eq("member_id", user.id);
     const mundos = (mundosRows || []).map(r => r.mundo);
@@ -1466,10 +1641,30 @@
 
     if (mundos.length) {
       const { data: contenido } = await supabase.from("contenido_mundo").select("*").in("mundo", mundos);
-      renderContenido(contenido);
+      renderContenido(contenido, esPro);
     } else {
-      renderContenido([]);
+      renderContenido([], esPro);
     }
+
+    const { data: sorteos } = await supabase.from("sorteos").select("*").order("fecha_cierre", { ascending:true });
+    renderSorteos(sorteos, esPro);
+
+    const { data: concursos } = await supabase.from("concursos").select("*").order("fecha_cierre", { ascending:true });
+    renderConcursos(concursos, esPro);
+
+    const { data: pasesVip } = await supabase.from("pases_vip").select("*").order("fecha", { ascending:true });
+    renderPasesVip(pasesVip, esPro || (profile && profile.nivel === "nodo"));
+  }
+
+  async function cargarParticipa(){
+    const { data: profile } = await supabase.from("profiles").select("pro_vencimiento, nivel").eq("id", currentUser.id).single();
+    const esPro = renderPro(profile || {});
+    const { data: sorteos } = await supabase.from("sorteos").select("*").order("fecha_cierre", { ascending:true });
+    renderSorteos(sorteos, esPro);
+    const { data: concursos } = await supabase.from("concursos").select("*").order("fecha_cierre", { ascending:true });
+    renderConcursos(concursos, esPro);
+    const { data: pasesVip } = await supabase.from("pases_vip").select("*").order("fecha", { ascending:true });
+    renderPasesVip(pasesVip, esPro || (profile && profile.nivel === "nodo"));
   }
 
   async function subirImagenPerfil(file, tipo){
@@ -1634,6 +1829,45 @@
     if (!e.target.classList.contains("venta-del") || !currentUser) return;
     await supabase.from("ventas").delete().eq("id", e.target.dataset.id).eq("member_id", currentUser.id);
     await cargarVentas();
+  });
+
+  // ---------- Sé un PRO ----------
+  $("#btn-reportar-pro").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#pro-msg");
+    const { error } = await supabase.from("solicitudes_pro").insert({
+      member_id: currentUser.id,
+      medio_pago: $("#pro-medio").value,
+      notas: $("#pro-notas").value.trim() || null,
+    });
+    if (error) { msgEl.textContent = "Error: " + error.message; return; }
+
+    $("#pro-notas").value = ""; $("#pro-medio").value = "whatsapp";
+    msgEl.textContent = "Reportado, pendiente de confirmación ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+  });
+
+  // ---------- Pases VIP (crea el nodo, aprueba CREALLAB) ----------
+  $("#btn-crear-pase").addEventListener("click", async () => {
+    if (!currentUser) return;
+    const msgEl = $("#pase-msg");
+    const titulo = $("#pase-titulo").value.trim();
+    if (!titulo) { msgEl.textContent = "Ponle un título a la actividad."; return; }
+
+    const { error } = await supabase.from("pases_vip").insert({
+      member_id: currentUser.id,
+      titulo,
+      fecha: $("#pase-fecha").value || null,
+      lugar: $("#pase-lugar").value.trim() || null,
+      cupo: parseInt($("#pase-cupo").value, 10) || null,
+      descripcion: $("#pase-descripcion").value.trim() || null,
+    });
+    if (error) { msgEl.textContent = "Error: " + error.message; return; }
+
+    ["#pase-titulo","#pase-fecha","#pase-lugar","#pase-cupo","#pase-descripcion"].forEach(sel => $(sel).value = "");
+    await cargarParticipa();
+    msgEl.textContent = "Publicado, pendiente de aprobación ✓";
+    setTimeout(() => { msgEl.textContent = ""; }, 3000);
   });
 
   // ---------- mensajes de compradores ----------
