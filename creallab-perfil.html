@@ -146,6 +146,42 @@
 
   .not-found{padding:100px 20px; text-align:center;}
   .hidden{display:none !important;}
+
+  /* ---------- seguir / proponer colaboración ---------- */
+  .acciones-row{display:flex; gap:8px; justify-content:center; flex-wrap:wrap; margin-top:14px;}
+  .btn{
+    font-family:var(--sans); font-weight:700; font-size:12.5px; padding:9px 18px;
+    border-radius:999px; cursor:pointer; border:1px solid var(--line); background:#fff; color:var(--ink);
+    display:inline-flex; align-items:center; gap:6px;
+  }
+  .btn-primary{background:var(--clay); color:#fff; border-color:var(--clay);}
+  .btn-primary:hover{background:#b81c23;}
+  .btn-seguir.is-siguiendo{background:var(--paper-2); color:var(--ink); border-color:var(--line);}
+  .login-hint{font-size:12px; margin-top:12px;}
+  .login-hint a{color:var(--clay); font-weight:600; text-decoration:none;}
+  .login-hint a:hover{text-decoration:underline;}
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(13,13,13,0.55);
+    display:flex; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal-card{
+    background:#fff; border-radius:18px; max-width:420px; width:100%; padding:28px 24px;
+    text-align:left; box-shadow:0 30px 70px rgba(0,0,0,0.25); position:relative;
+  }
+  .modal-card h2{font-size:18px; margin-bottom:6px; padding-right:24px;}
+  .modal-card p{font-size:13px;}
+  .modal-close{
+    position:absolute; top:14px; right:14px; width:28px; height:28px; border-radius:50%;
+    border:1px solid var(--line); background:#fff; cursor:pointer; font-size:16px; line-height:1;
+    color:var(--ink-soft); display:flex; align-items:center; justify-content:center; padding:0;
+  }
+  .modal-close:hover{border-color:var(--ink); color:var(--ink);}
+  #colaborar-texto{
+    width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:13px; resize:vertical; min-height:80px; margin:10px 0;
+  }
+  .colaborar-msg{font-size:12px; color:var(--ink-soft); display:block; margin-top:8px;}
 </style>
 </head>
 <body>
@@ -181,6 +217,14 @@
     </div>
     <div class="insignias-row" id="insignias-row"></div>
 
+    <div class="acciones-row" id="acciones-row">
+      <button id="btn-seguir" class="btn btn-seguir hidden" type="button">Seguir</button>
+      <button id="btn-colaborar" class="btn btn-primary hidden" type="button">Proponer colaboración</button>
+    </div>
+    <p class="login-hint hidden" id="login-hint">
+      <a href="creallab-portal.html">Inicia sesión en tu cuenta</a> para seguir a este miembro.
+    </p>
+
     <div class="stats-row">
       <div class="stat"><strong id="stat-obras">0</strong><span>Obras</span></div>
       <div class="stat"><strong id="stat-productos">0</strong><span>Productos</span></div>
@@ -212,6 +256,17 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="modal-colaborar" class="modal-overlay hidden">
+  <div class="modal-card">
+    <button id="modal-colaborar-cerrar" class="modal-close" type="button" aria-label="Cerrar">&times;</button>
+    <h2>Proponer colaboración</h2>
+    <p>Escribe tu propuesta a <strong id="colaborar-nombre">este miembro</strong> — se abre un chat privado entre ustedes dos.</p>
+    <textarea id="colaborar-texto" placeholder="Ej: Hola, me gustaría organizar un taller en conjunto…"></textarea>
+    <button id="btn-enviar-colaborar" class="btn btn-primary" type="button">Enviar propuesta</button>
+    <span class="colaborar-msg" id="colaborar-msg"></span>
   </div>
 </div>
 
@@ -325,22 +380,81 @@
     $("#insignias-row").innerHTML = insignias.join("");
   }
 
+  // ---------- seguir / proponer colaboración ----------
+  // "Seguir" es privado (no se muestran listas ni contadores) y solo
+  // sirve para desbloquear "Proponer colaboración" — comprar un
+  // producto nunca depende de esto. "Proponer colaboración" además
+  // exige que tanto quien visita como el dueño del perfil sean Nodo.
+  function renderAcciones(profile, viewer, siguiendo){
+    const row = $("#acciones-row");
+    const hint = $("#login-hint");
+    const btnSeguir = $("#btn-seguir");
+    const btnColaborar = $("#btn-colaborar");
+
+    if (!viewer) {
+      row.classList.add("hidden");
+      hint.classList.remove("hidden");
+      return;
+    }
+    hint.classList.add("hidden");
+
+    if (viewer.id === profile.id) {
+      row.classList.add("hidden"); // es tu propio perfil público
+      return;
+    }
+    row.classList.remove("hidden");
+
+    btnSeguir.classList.remove("hidden");
+    btnSeguir.textContent = siguiendo ? "Siguiendo" : "Seguir";
+    btnSeguir.classList.toggle("is-siguiendo", siguiendo);
+
+    const puedeColaborar = viewer.nivel === "nodo" && profile.nivel === "nodo" && siguiendo;
+    btnColaborar.classList.toggle("hidden", !puedeColaborar);
+  }
+
+  function abrirModalColaborar(nombreDestino){
+    $("#colaborar-nombre").textContent = nombreDestino || "este miembro";
+    $("#colaborar-texto").value = "";
+    $("#colaborar-msg").textContent = "";
+    $("#modal-colaborar").classList.remove("hidden");
+  }
+  function cerrarModalColaborar(){
+    $("#modal-colaborar").classList.add("hidden");
+  }
+  $("#modal-colaborar-cerrar").addEventListener("click", cerrarModalColaborar);
+
   // ---------- MODO DEMO ----------
   if (DEMO_MODE) {
-    const MOCK_PROFILE = { nombre:"Miembro Ejemplo", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:true, fundador:true, alianza_institucional:false };
+    const MOCK_PROFILE = { id:"profile1", nombre:"Miembro Ejemplo", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:true, fundador:true, alianza_institucional:false, nivel:"nodo" };
     const MOCK_MUNDOS = ["ALLtaller", "ALLquimia"];
-    const MOCK_STATS = { puntos:350, nivel:"creador" };
+    const MOCK_STATS = { puntos:350, nivel:"nodo" };
     const MOCK_OBRAS = [
       { titulo:"Chuspa roja edición limitada", descripcion:"Tejido a mano.", imagen_url:"" },
       { titulo:"Grabado en linóleo — serie I", descripcion:"", imagen_url:"" },
     ];
     const MOCK_PRODUCTOS = [{ id:"pr1", nombre:"Chuspa roja edición limitada", categoria:"OBRAS", tipo:"Tejido", precio:180, link_pago_mp:"https://www.mercadopago.com.pe/checkout/example-link" }];
     const MOCK_PREMIOS = [{ titulo:"Primer taller completado", descripcion:"Por terminar tu primer curso en ALLtaller." }];
+    const MOCK_VIEWER = { id:"viewer1", nombre:"Visitante Demo", nivel:"nodo" };
+    let demoSiguiendo = false;
+
+    $("#btn-seguir").addEventListener("click", () => {
+      demoSiguiendo = !demoSiguiendo;
+      renderAcciones(MOCK_PROFILE, MOCK_VIEWER, demoSiguiendo);
+    });
+    $("#btn-colaborar").addEventListener("click", () => abrirModalColaborar(MOCK_PROFILE.nombre));
+    $("#btn-enviar-colaborar").addEventListener("click", () => {
+      const texto = $("#colaborar-texto").value.trim();
+      const msgEl = $("#colaborar-msg");
+      if (!texto) { msgEl.textContent = "Escribe tu propuesta antes de enviarla."; return; }
+      msgEl.textContent = "Propuesta enviada ✓ (modo demo) — continúa la conversación desde Mensajes en tu cuenta.";
+      setTimeout(cerrarModalColaborar, 2200);
+    });
 
     if (!handle) {
       showNotFound();
     } else {
       renderHeader(MOCK_PROFILE, MOCK_MUNDOS, MOCK_STATS, { obras:MOCK_OBRAS.length, productos:MOCK_PRODUCTOS.length, premios:MOCK_PREMIOS.length });
+      renderAcciones(MOCK_PROFILE, MOCK_VIEWER, demoSiguiendo);
       renderObras(MOCK_OBRAS);
       renderProductos(MOCK_PRODUCTOS);
       renderPremios(MOCK_PREMIOS);
@@ -351,12 +465,78 @@
 
   // ---------- MODO REAL ----------
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  let targetProfile = null;
+  let viewerProfile = null; // null = nadie inició sesión en este navegador
+  let siguiendoActual = false;
+
+  async function cargarViewer(){
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { viewerProfile = null; return; }
+    const { data } = await supabase.from("profiles").select("id, nombre, nivel").eq("id", session.user.id).maybeSingle();
+    viewerProfile = data || { id: session.user.id, nivel: null };
+  }
+
+  async function cargarSiguiendo(){
+    if (!viewerProfile || !targetProfile) { siguiendoActual = false; return; }
+    const { data } = await supabase.from("sigue").select("seguido_id")
+      .eq("seguidor_id", viewerProfile.id).eq("seguido_id", targetProfile.id).maybeSingle();
+    siguiendoActual = !!data;
+  }
+
+  $("#btn-seguir").addEventListener("click", async () => {
+    if (!viewerProfile || !targetProfile) return;
+    const btn = $("#btn-seguir");
+    btn.disabled = true;
+    if (siguiendoActual) {
+      await supabase.from("sigue").delete().eq("seguidor_id", viewerProfile.id).eq("seguido_id", targetProfile.id);
+      siguiendoActual = false;
+    } else {
+      await supabase.from("sigue").insert({ seguidor_id: viewerProfile.id, seguido_id: targetProfile.id });
+      siguiendoActual = true;
+    }
+    btn.disabled = false;
+    renderAcciones(targetProfile, viewerProfile, siguiendoActual);
+  });
+
+  $("#btn-colaborar").addEventListener("click", () => abrirModalColaborar(targetProfile && (targetProfile.nombre || targetProfile.handle)));
+
+  $("#btn-enviar-colaborar").addEventListener("click", async () => {
+    if (!viewerProfile || !targetProfile) return;
+    const texto = $("#colaborar-texto").value.trim();
+    const msgEl = $("#colaborar-msg");
+    if (!texto) { msgEl.textContent = "Escribe tu propuesta antes de enviarla."; return; }
+    msgEl.textContent = "Enviando…";
+
+    const { data: existente } = await supabase.from("colaboraciones")
+      .select("id")
+      .eq("estado", "abierta")
+      .or(`and(iniciador_id.eq.${viewerProfile.id},destinatario_id.eq.${targetProfile.id}),and(iniciador_id.eq.${targetProfile.id},destinatario_id.eq.${viewerProfile.id})`)
+      .maybeSingle();
+
+    if (existente) {
+      msgEl.textContent = "Ya tienes una conversación abierta con este miembro — continúala desde Mensajes en tu cuenta.";
+      return;
+    }
+
+    const { data: nueva, error } = await supabase.from("colaboraciones")
+      .insert({ destinatario_id: targetProfile.id })
+      .select("id")
+      .single();
+    if (error) { msgEl.textContent = "No se pudo enviar: " + error.message; return; }
+
+    const { error: errorMsg } = await supabase.from("colaboracion_mensajes").insert({ colaboracion_id: nueva.id, texto });
+    if (errorMsg) { msgEl.textContent = "Se creó el hilo pero no se pudo enviar el mensaje: " + errorMsg.message; return; }
+
+    msgEl.textContent = "Propuesta enviada ✓ — continúa la conversación desde Mensajes en tu cuenta.";
+    setTimeout(cerrarModalColaborar, 2200);
+  });
 
   (async () => {
     if (!handle) { showNotFound(); return; }
 
     const { data: profile } = await supabase.from("profiles").select("*").eq("handle", handle).eq("perfil_publico", true).maybeSingle();
     if (!profile) { showNotFound(); return; }
+    targetProfile = profile;
 
     const [{ data: mundosRows }, { data: puntosRow }, { data: obras }, { data: productos }, { data: premios }] = await Promise.all([
       supabase.from("member_mundos").select("mundo").eq("member_id", profile.id),
@@ -373,6 +553,10 @@
     renderProductos(productos);
     renderPremios(premios);
     showProfile();
+
+    await cargarViewer();
+    await cargarSiguiendo();
+    renderAcciones(targetProfile, viewerProfile, siguiendoActual);
   })().catch(() => showNotFound());
 })();
 </script>
