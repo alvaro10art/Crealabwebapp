@@ -181,6 +181,34 @@
   .pro-perks{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:16px;}
   .pro-perk{font-size:11.5px; font-weight:700; letter-spacing:.02em; padding:5px 12px; border-radius:999px; background:#fff; border:1px solid var(--line); color:var(--ink-soft);}
 
+  /* ---------- modal: planes PRO ---------- */
+  .modal-pro-card{max-width:760px; text-align:left; padding:30px 26px; position:relative;}
+  .modal-pro-card h2{font-size:19px; margin-bottom:4px;}
+  .modal-pro-card > p{font-size:13px;}
+  .planes-pro-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-top:18px;}
+  .plan-pro-card{
+    position:relative; border:1px solid var(--line); border-radius:14px; padding:20px 16px;
+    display:flex; flex-direction:column; background:var(--paper-2);
+  }
+  .plan-pro-card.destacado{border-color:var(--clay); background:linear-gradient(160deg, rgba(215,34,42,0.07), rgba(215,34,42,0.01)); box-shadow:0 8px 24px rgba(215,34,42,0.12);}
+  .plan-pro-badge{
+    position:absolute; top:-11px; left:16px; background:var(--clay); color:#fff; font-size:10.5px;
+    font-weight:700; letter-spacing:.03em; padding:4px 10px; border-radius:999px;
+  }
+  .plan-pro-card h3{font-size:16px; margin:2px 0 2px;}
+  .plan-pro-periodo{font-size:12px; color:var(--ink-soft); margin-bottom:12px;}
+  .plan-pro-precio{font-size:24px; font-weight:700; margin-bottom:14px;}
+  .plan-pro-precio span{font-size:12px; font-weight:600; color:var(--ink-soft); margin-left:2px;}
+  .plan-pro-perks{list-style:none; padding:0; margin:0 0 18px; font-size:12.5px; color:var(--ink-soft); display:flex; flex-direction:column; gap:7px;}
+  .plan-pro-perks li{padding-left:16px; position:relative;}
+  .plan-pro-perks li::before{content:"✓"; position:absolute; left:0; color:var(--clay); font-weight:700;}
+  .plan-pro-btn{margin-top:auto; width:100%; justify-content:center;}
+  .pro-pago-resumen{font-size:13.5px; margin-bottom:14px;}
+  .pro-pago-mp-link{margin-bottom:16px;}
+  .pro-pago-mp-link .btn{width:100%; justify-content:center;}
+  .pro-volver-btn{background:none; border:none; color:var(--ink-soft); font-size:12.5px; cursor:pointer; font-family:var(--sans); padding:0; margin-bottom:14px; display:inline-flex; align-items:center; gap:4px;}
+  .pro-volver-btn:hover{color:var(--ink);}
+
   /* ---------- nivel / puntos ---------- */
   .level-badge{
     display:flex; align-items:center; gap:10px; padding:8px 14px;
@@ -463,17 +491,7 @@
           <span class="pro-perk">Pases VIP</span>
           <span class="pro-perk">Promociones</span>
         </div>
-        <div class="producto-form">
-          <select id="pro-medio">
-            <option value="whatsapp">Pagué por WhatsApp / directo</option>
-            <option value="mercadopago">Pagué con Mercado Pago</option>
-          </select>
-          <textarea id="pro-notas" class="full" rows="2" placeholder="Notas (opcional)"></textarea>
-          <div class="full">
-            <button id="btn-reportar-pro" class="btn btn-primary" type="button">Reporté mi pago — S/ 25</button>
-            <span class="mundos-msg" id="pro-msg"></span>
-          </div>
-        </div>
+        <button id="btn-abrir-pro" class="btn btn-primary" type="button">Ver planes PRO</button>
       </div>
 
       <div class="card wide admin-card hidden" id="card-admin">
@@ -695,6 +713,38 @@
   </div>
 </div>
 
+<div id="modal-pro" class="modal-overlay hidden">
+  <div class="modal-card modal-pro-card">
+    <button id="modal-pro-cerrar" class="modal-close" type="button" aria-label="Cerrar">&times;</button>
+
+    <div id="pro-paso-planes">
+      <h2>Elige tu plan PRO</h2>
+      <p>Con cualquier plan participas en sorteos, concursos, pases VIP y promociones exclusivas mientras esté vigente.</p>
+      <div class="planes-pro-grid" id="pro-planes-list">
+        <p class="empty">Cargando planes…</p>
+      </div>
+    </div>
+
+    <div id="pro-paso-pago" class="hidden">
+      <button id="btn-pro-volver" class="pro-volver-btn" type="button">← Elegir otro plan</button>
+      <h2>Confirma tu pago</h2>
+      <p class="pro-pago-resumen" id="pro-pago-resumen"></p>
+      <div class="pro-pago-mp-link hidden" id="pro-pago-mp-link"></div>
+      <div class="producto-form">
+        <select id="pro-medio">
+          <option value="whatsapp">Pagué por WhatsApp / directo</option>
+          <option value="mercadopago">Pagué con Mercado Pago</option>
+        </select>
+        <textarea id="pro-notas" class="full" rows="2" placeholder="Notas (opcional)"></textarea>
+        <div class="full">
+          <button id="btn-reportar-pro" class="btn btn-primary" type="button">Reporté mi pago</button>
+          <span class="mundos-msg" id="pro-msg"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
   const $ = (sel) => document.querySelector(sel);
@@ -710,6 +760,8 @@
   let mode = "signin";
   let currentUser = null; // solo se usa en modo real (Supabase)
   let currentProfile = null; // solo se usa en modo real (Supabase)
+  let planesProCache = [];
+  let proPlanSeleccionado = null;
 
   const WORLDS = [
     { key:"ALLtaller",   nombre:"ALLtaller",   desc:"Cursos, talleres y clases en vivo." },
@@ -785,6 +837,11 @@
       { id:"p1", titulo:"Visita a taller de cerámica en Barranco", descripcion:"Actividad presencial con cupo limitado.", fecha:"2026-08-30", lugar:"Barranco, Lima", cupo:15, estado:"aprobado" },
       { id:"p2", titulo:"Encuentro virtual de tejido ancestral", descripcion:"", fecha:"2026-09-10", lugar:"Zoom", cupo:null, estado:"pendiente" },
     ],
+    proPlanes: [
+      { id:"plan-nomada", nombre:"Nómada", periodo:"Mensual", meses:1, precio:6, destacado:false, link_pago_mp:"" },
+      { id:"plan-urban", nombre:"Urban", periodo:"Trimestral", meses:3, precio:15, destacado:false, link_pago_mp:"" },
+      { id:"plan-museum", nombre:"Museum", periodo:"Semestral", meses:6, precio:25, destacado:true, link_pago_mp:"https://www.mercadopago.com.pe/" },
+    ],
   };
 
   function showMsg(text, kind){
@@ -854,23 +911,76 @@
 
   function renderPro(profile){
     const el = $("#pro-status-note");
-    const btn = $("#btn-reportar-pro");
+    const btn = $("#btn-abrir-pro");
     const activo = esProVigente(profile);
     if (activo) {
       el.textContent = `Eres PRO hasta el ${fmtFechaCorta(profile.pro_vencimiento)}.`;
       el.className = "pro-status is-active";
-      btn.textContent = "Renovar PRO — S/ 25";
+      btn.textContent = "Renovar PRO";
     } else if (profile && profile.pro_vencimiento) {
       el.textContent = `Tu PRO venció el ${fmtFechaCorta(profile.pro_vencimiento)} — renuévalo para seguir participando.`;
       el.className = "pro-status is-expired";
-      btn.textContent = "Renovar PRO — S/ 25";
+      btn.textContent = "Renovar PRO";
     } else {
       el.textContent = "Aún no eres PRO. Hazte PRO para participar en sorteos, concursos, pases VIP y promociones.";
       el.className = "pro-status";
-      btn.textContent = "Hazte PRO — S/ 25";
+      btn.textContent = "Hazte PRO";
     }
     return activo;
   }
+
+  // ---------- modal: elegir plan PRO y pagar ----------
+  function renderPlanesPro(list){
+    const el = $("#pro-planes-list");
+    if (!list || !list.length) { el.innerHTML = '<p class="empty">Aún no hay planes PRO disponibles.</p>'; return; }
+    el.innerHTML = list.map(p => `
+      <div class="plan-pro-card${p.destacado ? " destacado" : ""}">
+        ${p.destacado ? '<span class="plan-pro-badge">Recomendado</span>' : ""}
+        <h3>${p.nombre}</h3>
+        <p class="plan-pro-periodo">${p.periodo}</p>
+        <div class="plan-pro-precio">S/ ${p.precio}<span>/ ${p.meses === 1 ? "mes" : p.meses + " meses"}</span></div>
+        <ul class="plan-pro-perks">
+          <li>Sorteos de la comunidad</li>
+          <li>Concursos con premios</li>
+          <li>Pases VIP a actividades</li>
+          <li>Promociones exclusivas</li>
+        </ul>
+        <button class="btn btn-primary plan-pro-btn" type="button" data-id="${p.id}">Elegir ${p.nombre}</button>
+      </div>
+    `).join("");
+  }
+
+  const modalPro = $("#modal-pro");
+  function abrirPasoPlanes(){
+    $("#pro-paso-pago").classList.add("hidden");
+    $("#pro-paso-planes").classList.remove("hidden");
+  }
+  function abrirPasoPago(plan){
+    proPlanSeleccionado = plan;
+    $("#pro-pago-resumen").innerHTML = `Elegiste <strong>${plan.nombre}</strong> — S/ ${plan.precio} (${plan.periodo}).`;
+    const mpWrap = $("#pro-pago-mp-link");
+    if (plan.link_pago_mp) {
+      mpWrap.innerHTML = `<a href="${plan.link_pago_mp}" target="_blank" rel="noopener" class="btn btn-primary">Pagar con Mercado Pago</a>`;
+      mpWrap.classList.remove("hidden");
+    } else {
+      mpWrap.innerHTML = "";
+      mpWrap.classList.add("hidden");
+    }
+    $("#pro-notas").value = ""; $("#pro-medio").value = "whatsapp"; $("#pro-msg").textContent = "";
+    $("#pro-paso-planes").classList.add("hidden");
+    $("#pro-paso-pago").classList.remove("hidden");
+  }
+  function openProModal(){ modalPro.classList.remove("hidden"); abrirPasoPlanes(); }
+  function closeProModal(){ modalPro.classList.add("hidden"); }
+  $("#btn-abrir-pro").addEventListener("click", openProModal);
+  $("#modal-pro-cerrar").addEventListener("click", closeProModal);
+  $("#btn-pro-volver").addEventListener("click", abrirPasoPlanes);
+  $("#pro-planes-list").addEventListener("click", (e) => {
+    const btn = e.target.closest(".plan-pro-btn");
+    if (!btn) return;
+    const plan = planesProCache.find(p => String(p.id) === btn.dataset.id);
+    if (plan) abrirPasoPago(plan);
+  });
 
   function renderParticipaLista(selector, list, esPro, vacio, itemFn){
     const el = $(selector);
@@ -1375,6 +1485,8 @@
       renderNivel(MOCK.nivel, MOCK.puntos, MOCK.nivelesConfig, MOCK.alianza_institucional, MOCK.fundador);
       renderAdminCard(MOCK.es_admin);
       const esProDemo = renderPro(MOCK);
+      planesProCache = MOCK.proPlanes;
+      renderPlanesPro(MOCK.proPlanes);
       renderPaseVipForm(MOCK.nivel);
       renderCursos(MOCK.cursos);
       renderPedidos(MOCK.pedidos);
@@ -1499,9 +1611,10 @@
     });
 
     $("#btn-reportar-pro").addEventListener("click", () => {
+      const nombrePlan = proPlanSeleccionado ? proPlanSeleccionado.nombre : "PRO";
       $("#pro-notas").value = ""; $("#pro-medio").value = "whatsapp";
-      $("#pro-msg").textContent = "Reportado, pendiente de confirmación (modo demo) ✓";
-      setTimeout(() => { $("#pro-msg").textContent = ""; }, 3000);
+      $("#pro-msg").textContent = `Reportado tu plan ${nombrePlan}, pendiente de confirmación (modo demo) ✓`;
+      setTimeout(() => { $("#pro-msg").textContent = ""; closeProModal(); }, 1800);
     });
 
     $("#btn-crear-pase").addEventListener("click", () => {
@@ -1609,6 +1722,10 @@
     renderAdminCard(profile && profile.es_admin);
     const esPro = renderPro(profile || {});
     renderPaseVipForm(profile && profile.nivel);
+
+    const { data: planesPro } = await supabase.from("pro_planes").select("*").order("orden", { ascending:true });
+    planesProCache = planesPro || [];
+    renderPlanesPro(planesProCache);
 
     const { data: mundosRows } = await supabase.from("member_mundos").select("mundo").eq("member_id", user.id);
     const mundos = (mundosRows || []).map(r => r.mundo);
@@ -1833,10 +1950,11 @@
 
   // ---------- Sé un PRO ----------
   $("#btn-reportar-pro").addEventListener("click", async () => {
-    if (!currentUser) return;
+    if (!currentUser || !proPlanSeleccionado) return;
     const msgEl = $("#pro-msg");
     const { error } = await supabase.from("solicitudes_pro").insert({
       member_id: currentUser.id,
+      plan_id: proPlanSeleccionado.id,
       medio_pago: $("#pro-medio").value,
       notas: $("#pro-notas").value.trim() || null,
     });
@@ -1844,7 +1962,7 @@
 
     $("#pro-notas").value = ""; $("#pro-medio").value = "whatsapp";
     msgEl.textContent = "Reportado, pendiente de confirmación ✓";
-    setTimeout(() => { msgEl.textContent = ""; }, 3000);
+    setTimeout(() => { msgEl.textContent = ""; closeProModal(); }, 1800);
   });
 
   // ---------- Pases VIP (crea el nodo, aprueba CREALLAB) ----------
