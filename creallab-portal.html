@@ -425,6 +425,10 @@
             <h3>Como comprador</h3>
             <div id="buzon-comprador-list"><p class="empty">Sin conversaciones.</p></div>
           </div>
+          <div class="buzon-seccion">
+            <h3>Colaboraciones</h3>
+            <div id="buzon-colaboraciones-list"><p class="empty">Sin colaboraciones.</p></div>
+          </div>
         </div>
       </div>
       <button id="btn-abrir-perfil" class="btn btn-ghost hidden">Mi perfil público</button>
@@ -657,6 +661,12 @@
         <p class="mundos-note">Si le escribiste a algún artista desde el catálogo estando en tu cuenta, esa conversación queda guardada aquí — sin depender del navegador que uses.</p>
         <div id="mis-conversaciones-list"><p class="empty">Aún no le escribiste a ningún artista.</p></div>
       </div>
+
+      <div class="card wide" id="card-colaboraciones">
+        <h2><span class="dot"></span>Colaboraciones</h2>
+        <p class="mundos-note">Propuestas de colaboración con otros miembros Nodo — solo se inician después de seguir a alguien desde su perfil público.</p>
+        <div id="colaboraciones-list"><p class="empty">Aún no tienes colaboraciones.</p></div>
+      </div>
     </div>
   </div>
 </main>
@@ -772,7 +782,7 @@
 
   // ---------- datos de ejemplo (modo demo, sin Supabase conectado) ----------
   const MOCK = {
-    profile: { nombre:"Miembro Ejemplo", fecha_ingreso:"2026-03-14", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:false },
+    profile: { id:"demo-member-1", nombre:"Miembro Ejemplo", fecha_ingreso:"2026-03-14", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:false },
     mundos: ["ALLtaller", "ALLquimia"],
     puntos: 350, nivel: "nodo", alianza_institucional: false, fundador: true, es_admin: true, pro_vencimiento: "2026-09-05",
     nivelesConfig: [
@@ -818,6 +828,16 @@
         id:"m1", producto_nombre:"Prensa CHUSPA Mini", estado:"abierta",
         mensajes: [
           { autor_tipo:"comprador", texto:"Hola, ya pagué la prensa, va el comprobante.", imagen_url:"", creado_en:"2026-08-02T10:10:00" },
+        ],
+      },
+    ],
+    colaboraciones: [
+      {
+        id:"col1", iniciador_id:"demo-member-1", destinatario_id:"otro-nodo-1",
+        iniciador_nombre:"Miembro Ejemplo", destinatario_nombre:"Jorge Quispe", estado:"abierta",
+        mensajes: [
+          { autor_id:"demo-member-1", texto:"Hola Jorge, ¿organizamos un taller juntos?", creado_en:"2026-08-05T09:00:00" },
+          { autor_id:"otro-nodo-1", texto:"¡Me encantaría! Hablemos por acá.", creado_en:"2026-08-05T09:15:00" },
         ],
       },
     ],
@@ -1250,8 +1270,15 @@
         </button>`).join("")
       : '<p class="empty">Sin conversaciones.</p>';
 
+    actualizarBadgeBuzon();
+  }
+
+  // suma lo abierto de las 3 fuentes (ventas, compras, colaboraciones) cada
+  // vez que cualquiera de ellas termina de cargar — así no importa el orden.
+  function actualizarBadgeBuzon(){
     const abiertas = ultimasConvVendedor.filter(c => c.estado === "abierta").length
-      + ultimasConvComprador.filter(c => c.estado === "abierta").length;
+      + ultimasConvComprador.filter(c => c.estado === "abierta").length
+      + ultimasColaboraciones.filter(c => c.estado === "abierta").length;
     const badge = $("#buzon-badge");
     badge.textContent = abiertas;
     badge.classList.toggle("hidden", abiertas === 0);
@@ -1335,6 +1362,79 @@
               </div>
             </div>
             ` : `<p class="conv-cerrada-note">Conversación cerrada.</p>`}
+          </div>
+        </div>
+      </div>`).join("");
+  }
+
+  // ---------- colaboraciones (entre miembros Nodo) ----------
+  let ultimasColaboraciones = [];
+  let miIdParaColab = null; // se fija al cargar (currentUser.id real, o MOCK.id en demo)
+
+  function renderColabLog(el, mensajes, miId){
+    el.innerHTML = (mensajes || []).map(m => {
+      const mio = m.autor_id === miId;
+      const texto = m.texto ? `<span>${m.texto.replace(/</g, "&lt;")}</span>` : "";
+      return `<div class="conv-msg ${mio ? "mio" : "otro"}">${texto}<span class="hora">${mio ? "Tú" : "Él/ella"} · ${horaConv(m.creado_en)}</span></div>`;
+    }).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function otroNombreColab(c, miId){
+    return c.iniciador_id === miId ? c.destinatario_nombre : c.iniciador_nombre;
+  }
+
+  function renderBuzonColaboraciones(){
+    const el = $("#buzon-colaboraciones-list");
+    el.innerHTML = ultimasColaboraciones.length
+      ? ultimasColaboraciones.map(c => `
+        <button class="buzon-item" type="button" data-id="${c.id}" data-tipo="colaboracion">
+          <span><strong>${otroNombreColab(c, miIdParaColab)}</strong><span class="sub">Colaboración</span></span>
+          <span class="pill ${c.estado === 'abierta' ? 'pendiente' : 'rechazado'}">${c.estado}</span>
+        </button>`).join("")
+      : '<p class="empty">Sin colaboraciones.</p>';
+
+    actualizarBadgeBuzon();
+  }
+
+  $("#buzon-colaboraciones-list").addEventListener("click", (e) => {
+    const btn = e.target.closest(".buzon-item");
+    if (!btn) return;
+    $("#buzon-dropdown").classList.add("hidden");
+    const head = document.querySelector(`.colab-item-head[data-id="${btn.dataset.id}"]`);
+    if (!head) return;
+    const item = head.closest(".conv-item");
+    if (!item.classList.contains("open")) head.click();
+    item.scrollIntoView({ behavior:"smooth", block:"center" });
+  });
+
+  function renderColaboraciones(list, miId){
+    ultimasColaboraciones = list || [];
+    miIdParaColab = miId;
+    renderBuzonColaboraciones();
+    const el = $("#colaboraciones-list");
+    if (!list || !list.length) { el.innerHTML = '<p class="empty">Aún no tienes colaboraciones.</p>'; return; }
+    el.innerHTML = list.map(c => `
+      <div class="conv-item" data-id="${c.id}">
+        <div class="conv-item-head colab-item-head" data-id="${c.id}">
+          <div>
+            <strong>${otroNombreColab(c, miId)}</strong>
+            <span>Colaboración</span>
+          </div>
+          <span class="pill ${c.estado === 'abierta' ? 'pendiente' : 'rechazado'}">${c.estado}</span>
+        </div>
+        <div class="conv-item-body">
+          <div class="conv-item-body-inner">
+            <div class="conv-log" id="colab-log-${c.id}"></div>
+            ${c.estado === "abierta" ? `
+            <div class="conv-reply">
+              <textarea id="colab-msg-${c.id}" placeholder="Responder…"></textarea>
+              <div class="conv-reply-row">
+                <button class="btn btn-ghost colab-enviar" data-id="${c.id}" type="button">Enviar</button>
+              </div>
+            </div>
+            <button class="conv-cerrar-btn colab-cerrar" data-id="${c.id}" type="button">Cerrar colaboración</button>
+            ` : `<p class="conv-cerrada-note">Colaboración cerrada.</p>`}
           </div>
         </div>
       </div>`).join("");
@@ -1505,6 +1605,7 @@
       renderMetricas(MOCK.ventas, MOCK.productos);
       renderConversaciones(MOCK.conversaciones);
       renderMisConversaciones(MOCK.misConversaciones);
+      renderColaboraciones(MOCK.colaboraciones, MOCK.profile.id);
       renderPerfilPublicoForm(MOCK.profile);
       renderContenido(MOCK.contenido, esProDemo);
       renderSorteos(MOCK.sorteos, esProDemo);
@@ -1708,6 +1809,39 @@
         renderConvLog($("#mis-conv-log-" + id), conv.mensajes, "comprador");
       }
     });
+
+    $("#colaboraciones-list").addEventListener("click", (e) => {
+      const headEl = e.target.closest(".colab-item-head");
+      if (headEl) {
+        const item = headEl.closest(".conv-item");
+        const wasOpen = item.classList.contains("open");
+        document.querySelectorAll("#colaboraciones-list .conv-item.open").forEach(o => o.classList.remove("open"));
+        if (!wasOpen) {
+          item.classList.add("open");
+          const col = MOCK.colaboraciones.find(c => c.id === headEl.dataset.id);
+          renderColabLog($("#colab-log-" + headEl.dataset.id), col ? col.mensajes : [], MOCK.profile.id);
+        }
+        return;
+      }
+      if (e.target.classList.contains("colab-enviar")) {
+        const id = e.target.dataset.id;
+        const col = MOCK.colaboraciones.find(c => c.id === id);
+        const texto = $("#colab-msg-" + id).value.trim();
+        if (!texto) return;
+        col.mensajes.push({ autor_id: MOCK.profile.id, texto, creado_en: new Date().toISOString() });
+        $("#colab-msg-" + id).value = "";
+        renderColabLog($("#colab-log-" + id), col.mensajes, MOCK.profile.id);
+        return;
+      }
+      if (e.target.classList.contains("colab-cerrar")) {
+        const id = e.target.dataset.id;
+        const col = MOCK.colaboraciones.find(c => c.id === id);
+        col.estado = "cerrada";
+        renderColaboraciones(MOCK.colaboraciones, MOCK.profile.id);
+        const item = document.querySelector(`.conv-item[data-id="${id}"]`);
+        if (item) { item.classList.add("open"); renderColabLog($("#colab-log-" + id), col.mensajes, MOCK.profile.id); }
+      }
+    });
     return; // no seguimos con la lógica real de Supabase
   }
 
@@ -1762,6 +1896,7 @@
 
     await cargarConversaciones();
     await cargarMisConversaciones();
+    await cargarColaboraciones();
 
     if (mundos.length) {
       const { data: contenido } = await supabase.from("contenido_mundo").select("*").in("mundo", mundos);
@@ -2126,6 +2261,61 @@
       } catch (err) {
         alert("No se pudo enviar: " + err.message);
       }
+    }
+  });
+
+  // ---------- colaboraciones (entre miembros Nodo) ----------
+  let colabAbiertaId = null;
+  let colabPollTimer = null;
+
+  async function cargarColaboraciones(){
+    const { data } = await supabase.from("colaboraciones")
+      .select("*")
+      .or(`iniciador_id.eq.${currentUser.id},destinatario_id.eq.${currentUser.id}`)
+      .order("creado_en", { ascending:false });
+    renderColaboraciones(data || [], currentUser.id);
+  }
+
+  async function pintarLogColaboracion(id){
+    const el = $("#colab-log-" + id);
+    if (!el) return;
+    const { data: mensajes } = await supabase.from("colaboracion_mensajes").select("*").eq("colaboracion_id", id).order("creado_en", { ascending:true });
+    renderColabLog(el, mensajes || [], currentUser.id);
+  }
+
+  $("#colaboraciones-list").addEventListener("click", async (e) => {
+    const headEl = e.target.closest(".colab-item-head");
+    if (headEl) {
+      const id = headEl.dataset.id;
+      const item = headEl.closest(".conv-item");
+      const wasOpen = item.classList.contains("open");
+      document.querySelectorAll("#colaboraciones-list .conv-item.open").forEach(o => o.classList.remove("open"));
+      if (colabPollTimer) { clearInterval(colabPollTimer); colabPollTimer = null; }
+      colabAbiertaId = null;
+      if (!wasOpen) {
+        item.classList.add("open");
+        colabAbiertaId = id;
+        await pintarLogColaboracion(id);
+        colabPollTimer = setInterval(() => pintarLogColaboracion(id), 4000);
+      }
+      return;
+    }
+    if (e.target.classList.contains("colab-enviar")) {
+      const id = e.target.dataset.id;
+      const textEl = $("#colab-msg-" + id);
+      const texto = textEl.value.trim();
+      if (!texto) return;
+      const { error } = await supabase.from("colaboracion_mensajes").insert({ colaboracion_id: id, texto });
+      if (error) { alert("No se pudo enviar: " + error.message); return; }
+      textEl.value = "";
+      await pintarLogColaboracion(id);
+      return;
+    }
+    if (e.target.classList.contains("colab-cerrar")) {
+      const id = e.target.dataset.id;
+      await supabase.from("colaboraciones").update({ estado:"cerrada" }).eq("id", id);
+      if (colabPollTimer) { clearInterval(colabPollTimer); colabPollTimer = null; }
+      await cargarColaboraciones();
     }
   });
 
