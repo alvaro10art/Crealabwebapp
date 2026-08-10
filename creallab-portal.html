@@ -140,6 +140,9 @@
   }
   .card h2{font-size:15px; font-family:var(--sans); font-weight:700; margin-bottom:14px; display:flex; align-items:center; gap:8px;}
   .card h2 .dot{width:7px; height:7px; border-radius:50%; background:var(--clay);}
+  .admin-card{background:var(--night); border-color:var(--night);}
+  .admin-card h2{color:#fff;}
+  .admin-card-note{color:rgba(255,255,255,0.72); font-size:13px; margin-bottom:14px;}
   .row-item{
     display:flex; align-items:center; justify-content:space-between; gap:10px;
     padding:10px 0; border-bottom:1px solid var(--line); font-size:13.5px;
@@ -431,6 +434,12 @@
         <div class="nivel-insignias" id="nivel-insignias"></div>
       </div>
 
+      <div class="card wide admin-card hidden" id="card-admin">
+        <h2><span class="dot"></span>Panel de marca</h2>
+        <p class="admin-card-note">Tu cuenta tiene acceso de administrador — ahí ves la evolución de CREALLAB: comunidad, niveles, ventas y actividad.</p>
+        <a href="creallab-admin.html" class="btn btn-primary">Seguir como admin →</a>
+      </div>
+
       <div class="card wide" id="card-mundos">
         <h2><span class="dot"></span>Tus mundos de interés</h2>
         <p class="mundos-note">Elige los mundos que más te interesan — no son categorías cerradas, se conectan entre sí dentro del ecosistema ALL. Puedes marcar varios a la vez y cambiarlos cuando quieras.</p>
@@ -636,7 +645,7 @@
   const MOCK = {
     profile: { nombre:"Miembro Ejemplo", fecha_ingreso:"2026-03-14", handle:"miembro-ejemplo", bio:"Artista textil explorando técnicas ancestrales.", perfil_publico:false },
     mundos: ["ALLtaller", "ALLquimia"],
-    puntos: 350, nivel: "creador", alianza_institucional: false, fundador: true,
+    puntos: 350, nivel: "creador", alianza_institucional: false, fundador: true, es_admin: true,
     nivelesConfig: [
       { nivel:"explorador", puntos_minimos:0,    orden:1 },
       { nivel:"creador",    puntos_minimos:300,  orden:2 },
@@ -745,6 +754,10 @@
     { nivel:"mentor",     puntos_minimos:1200, orden:3 },
     { nivel:"nodo",       puntos_minimos:3000, orden:4 },
   ];
+
+  function renderAdminCard(esAdmin){
+    $("#card-admin").classList.toggle("hidden", !esAdmin);
+  }
 
   function renderNivel(nivel, puntosTotales, nivelesConfig, alianzaInstitucional, fundador){
     nivel = nivel || "explorador";
@@ -1157,6 +1170,7 @@
       renderMemberWorldTags(MOCK.mundos);
       renderMundosPicker(MOCK.mundos);
       renderNivel(MOCK.nivel, MOCK.puntos, MOCK.nivelesConfig, MOCK.alianza_institucional, MOCK.fundador);
+      renderAdminCard(MOCK.es_admin);
       renderCursos(MOCK.cursos);
       renderPedidos(MOCK.pedidos);
       renderPremios(MOCK.premios);
@@ -1354,6 +1368,7 @@
     const puntosTotales = (puntosRows || []).reduce((sum, r) => sum + (r.puntos || 0), 0);
     const { data: nivelesConfig } = await supabase.from("niveles_config").select("*").order("orden");
     renderNivel(profile && profile.nivel, puntosTotales, nivelesConfig, profile && profile.alianza_institucional, profile && profile.fundador);
+    renderAdminCard(profile && profile.es_admin);
 
     const { data: mundosRows } = await supabase.from("member_mundos").select("mundo").eq("member_id", user.id);
     const mundos = (mundosRows || []).map(r => r.mundo);
