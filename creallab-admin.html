@@ -77,6 +77,12 @@
     font-family:var(--sans); font-size:14px; background:#fff;
   }
   .field input:focus{outline:2px solid var(--night); outline-offset:1px;}
+  .field select, .field textarea{
+    width:100%; padding:11px 13px; border-radius:10px; border:1px solid var(--line);
+    font-family:var(--sans); font-size:14px; background:#fff;
+  }
+  .field textarea{resize:vertical; min-height:64px;}
+  .field select:focus, .field textarea:focus{outline:2px solid var(--night); outline-offset:1px;}
   .gate-submit{width:100%; justify-content:center; margin-top:4px;}
   .gate-msg{font-size:12.5px; margin-top:12px;}
   .gate-msg.error{color:var(--clay);}
@@ -141,6 +147,33 @@
   .empty-note{font-size:13px; padding:30px 0; text-align:center; color:var(--viz-muted);}
 
   .ranking-table-wrap{overflow-x:auto;}
+
+  /* ---------- PREMIOS (ecosistema de puntos) ---------- */
+  .section-divider{padding:44px 0 8px;}
+  .section-divider h1{font-size:24px;}
+  .section-divider p{max-width:560px; font-size:14px;}
+  .premios-admin-grid{display:grid; grid-template-columns:1fr; gap:16px; padding:18px 0 70px;}
+  @media(min-width:860px){ .premios-admin-grid{grid-template-columns:340px 1fr;} .premios-admin-grid .wide{grid-column:1 / -1;} }
+  .pf-check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--ink-soft); margin:2px 0 16px;}
+  .pf-actions{display:flex; align-items:center; gap:10px;}
+  .admin-table-wrap{overflow-x:auto;}
+  .row-actions{display:flex; gap:6px; flex-wrap:wrap;}
+  .row-btn{
+    font-family:var(--sans); font-size:11px; font-weight:600; color:var(--viz-text-soft);
+    background:transparent; border:1px solid var(--viz-grid); border-radius:999px;
+    padding:4px 10px; cursor:pointer; white-space:nowrap;
+  }
+  .row-btn:hover{border-color:var(--viz-muted);}
+  .row-btn.danger{color:var(--clay); border-color:var(--clay);}
+  .pill{
+    font-size:11px; font-weight:600; padding:3px 9px; border-radius:999px;
+    display:inline-block;
+  }
+  .pill.on{background:rgba(27,175,122,0.12); color:#1baf7a;}
+  .pill.off{background:rgba(215,34,42,0.1); color:var(--clay);}
+  .pill.estado-confirmado{background:rgba(42,120,214,0.12); color:var(--viz-1);}
+  .pill.estado-entregado{background:rgba(27,175,122,0.12); color:#1baf7a;}
+  .pill.estado-cancelado{background:rgba(137,135,129,0.15); color:var(--viz-muted);}
 </style>
 </head>
 <body>
@@ -287,6 +320,67 @@
         <h2>Ranking completo</h2>
         <p class="chart-sub">Todos los miembros con ventas o productos — para reconocer de un vistazo a quién le está yendo mejor.</p>
         <div class="ranking-table-wrap" id="ranking-table-wrap"></div>
+      </div>
+    </div>
+
+    <section class="section-divider">
+      <h1>Premios — ecosistema de puntos</h1>
+      <p>No es una suscripción: es la tienda de puntos del laboratorio. Crea acá los premios que cualquier miembro puede canjear con sus puntos — objetos, cursos, viajes — y se publican solos en la página principal apenas los actives.</p>
+    </section>
+
+    <div class="premios-admin-grid">
+      <div class="chart-card" id="card-premio-form">
+        <h2 id="premio-form-title">Nuevo premio</h2>
+        <form id="premio-form">
+          <div class="field">
+            <label for="pf-nombre">Nombre</label>
+            <input type="text" id="pf-nombre" required>
+          </div>
+          <div class="field">
+            <label for="pf-categoria">Categoría</label>
+            <select id="pf-categoria">
+              <option value="objeto">Objeto</option>
+              <option value="curso">Curso</option>
+              <option value="viaje">Viaje</option>
+              <option value="experiencia">Experiencia</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pf-costo">Costo en puntos</label>
+            <input type="number" id="pf-costo" min="1" step="1" required>
+          </div>
+          <div class="field">
+            <label for="pf-stock">Stock (vacío = sin límite)</label>
+            <input type="number" id="pf-stock" min="0" step="1">
+          </div>
+          <div class="field">
+            <label for="pf-imagen">Imagen (URL, opcional)</label>
+            <input type="text" id="pf-imagen" placeholder="https://…">
+          </div>
+          <div class="field">
+            <label for="pf-descripcion">Descripción (opcional)</label>
+            <textarea id="pf-descripcion"></textarea>
+          </div>
+          <label class="pf-check"><input type="checkbox" id="pf-activo" checked> Activo (visible en la página principal)</label>
+          <div class="pf-actions">
+            <button type="submit" class="btn btn-clay" id="pf-submit">Crear premio</button>
+            <button type="button" class="btn btn-ghost hidden" id="pf-cancelar">Cancelar edición</button>
+          </div>
+          <p class="gate-msg" id="pf-msg"></p>
+        </form>
+      </div>
+
+      <div class="chart-card wide" id="card-premios-lista">
+        <h2>Catálogo</h2>
+        <p class="chart-sub">Todos tus premios, activos e inactivos.</p>
+        <div class="admin-table-wrap" id="premios-admin-table"></div>
+      </div>
+
+      <div class="chart-card wide" id="card-canjes">
+        <h2>Canjes recientes</h2>
+        <p class="chart-sub">Quién canjeó qué — marca "Entregado" cuando ya salió, o "Cancelar" si no se pudo completar (le devuelve el stock y los puntos).</p>
+        <div class="admin-table-wrap" id="canjes-admin-table"></div>
       </div>
     </div>
   </div>
@@ -625,6 +719,99 @@
     wrap.innerHTML = `<table class="data-table"><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
   }
 
+  // ---------- PREMIOS (ecosistema de puntos) ----------
+  const CATEGORIA_LABEL = { objeto:"Objeto", curso:"Curso", viaje:"Viaje", experiencia:"Experiencia", otro:"Otro" };
+  const ESTADO_CANJE_LABEL = { confirmado:"Confirmado", entregado:"Entregado", cancelado:"Cancelado" };
+
+  function renderPremiosAdminTable(list){
+    const wrap = $("#premios-admin-table");
+    if (!list || !list.length){
+      wrap.innerHTML = `<p class="empty-note">Todavía no has creado premios.</p>`;
+      return;
+    }
+    const headRow = `<tr><th>Nombre</th><th>Categoría</th><th class="num">Costo</th><th class="num">Stock</th><th>Estado</th><th></th></tr>`;
+    const bodyRows = list.map(p => `
+      <tr>
+        <td>${p.nombre}</td>
+        <td>${CATEGORIA_LABEL[p.categoria] || p.categoria}</td>
+        <td class="num">${compact(p.costo_puntos)} pts</td>
+        <td class="num">${(p.stock === null || p.stock === undefined) ? "Sin límite" : compact(p.stock)}</td>
+        <td><span class="pill ${p.activo ? "on" : "off"}">${p.activo ? "Activo" : "Inactivo"}</span></td>
+        <td>
+          <div class="row-actions">
+            <button type="button" class="row-btn" data-action="editar" data-id="${p.id}">Editar</button>
+            <button type="button" class="row-btn" data-action="toggle" data-id="${p.id}">${p.activo ? "Desactivar" : "Activar"}</button>
+          </div>
+        </td>
+      </tr>`).join("");
+    wrap.innerHTML = `<table class="data-table"><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
+  }
+
+  function renderCanjesAdminTable(list){
+    const wrap = $("#canjes-admin-table");
+    if (!list || !list.length){
+      wrap.innerHTML = `<p class="empty-note">Todavía no hay canjes.</p>`;
+      return;
+    }
+    const headRow = `<tr><th>Miembro</th><th>Premio</th><th class="num">Puntos</th><th>Fecha</th><th>Estado</th><th></th></tr>`;
+    const bodyRows = list.map(c => {
+      const fecha = c.creado_en ? new Date(c.creado_en).toLocaleDateString("es-PE", { day:"2-digit", month:"short", year:"numeric" }) : "—";
+      const acciones = c.estado === "confirmado"
+        ? `<div class="row-actions">
+            <button type="button" class="row-btn" data-action="entregar" data-id="${c.id}">Entregado</button>
+            <button type="button" class="row-btn danger" data-action="cancelar" data-id="${c.id}">Cancelar</button>
+          </div>`
+        : "";
+      return `
+        <tr>
+          <td>${c.member_nombre || "—"}</td>
+          <td>${c.premio_nombre}</td>
+          <td class="num">${compact(c.costo_puntos)} pts</td>
+          <td>${fecha}</td>
+          <td><span class="pill estado-${c.estado}">${ESTADO_CANJE_LABEL[c.estado] || c.estado}</span></td>
+          <td>${acciones}</td>
+        </tr>`;
+    }).join("");
+    wrap.innerHTML = `<table class="data-table"><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
+  }
+
+  let editingPremioId = null;
+
+  function readPremioForm(){
+    const stockVal = $("#pf-stock").value.trim();
+    return {
+      nombre: $("#pf-nombre").value.trim(),
+      categoria: $("#pf-categoria").value,
+      costo_puntos: parseInt($("#pf-costo").value, 10) || 0,
+      stock: stockVal === "" ? null : parseInt(stockVal, 10),
+      imagen_url: $("#pf-imagen").value.trim() || null,
+      descripcion: $("#pf-descripcion").value.trim() || null,
+      activo: $("#pf-activo").checked,
+    };
+  }
+  function fillPremioForm(p){
+    $("#pf-nombre").value = p.nombre || "";
+    $("#pf-categoria").value = p.categoria || "objeto";
+    $("#pf-costo").value = p.costo_puntos || "";
+    $("#pf-stock").value = (p.stock === null || p.stock === undefined) ? "" : p.stock;
+    $("#pf-imagen").value = p.imagen_url || "";
+    $("#pf-descripcion").value = p.descripcion || "";
+    $("#pf-activo").checked = !!p.activo;
+    $("#premio-form-title").textContent = "Editar premio";
+    $("#pf-submit").textContent = "Guardar cambios";
+    $("#pf-cancelar").classList.remove("hidden");
+  }
+  function resetPremioForm(){
+    $("#premio-form").reset();
+    $("#pf-activo").checked = true;
+    $("#premio-form-title").textContent = "Nuevo premio";
+    $("#pf-submit").textContent = "Crear premio";
+    $("#pf-cancelar").classList.add("hidden");
+    $("#pf-msg").textContent = ""; $("#pf-msg").className = "gate-msg";
+    editingPremioId = null;
+  }
+  $("#pf-cancelar").addEventListener("click", resetPremioForm);
+
   // ---------- MODO DEMO ----------
   function buildMockData(){
     const win = monthWindow(6);
@@ -706,6 +893,74 @@
     });
     $("#btn-logout").addEventListener("click", () => location.reload());
     $("#btn-logout-denied").addEventListener("click", () => location.reload());
+
+    // ---------- Premios: modo demo ----------
+    const MOCK_PREMIOS_ADMIN = [
+      { id:"mp1", nombre:"Impresora 3D", categoria:"objeto", costo_puntos:2400, stock:1, activo:true, descripcion:"", imagen_url:"" },
+      { id:"mp2", nombre:"Prensa CHUSPA", categoria:"objeto", costo_puntos:1200, stock:2, activo:true, descripcion:"", imagen_url:"" },
+      { id:"mp3", nombre:"Curso de tinte natural con cochinilla", categoria:"curso", costo_puntos:300, stock:null, activo:true, descripcion:"", imagen_url:"" },
+      { id:"mp4", nombre:"Pase VIP — evento pasado", categoria:"experiencia", costo_puntos:150, stock:0, activo:false, descripcion:"", imagen_url:"" },
+    ];
+    const MOCK_CANJES = [
+      { id:"c1", member_nombre:"Marina Q.", premio_nombre:"Prensa CHUSPA", costo_puntos:1200, estado:"confirmado", creado_en:"2026-08-05T10:00:00" },
+      { id:"c2", member_nombre:"Diego H.", premio_nombre:"Curso de tinte natural con cochinilla", costo_puntos:300, estado:"entregado", creado_en:"2026-07-28T10:00:00" },
+    ];
+    renderPremiosAdminTable(MOCK_PREMIOS_ADMIN);
+    renderCanjesAdminTable(MOCK_CANJES);
+
+    $("#premios-admin-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".row-btn");
+      if (!btn) return;
+      const premio = MOCK_PREMIOS_ADMIN.find(p => p.id === btn.dataset.id);
+      if (!premio) return;
+      if (btn.dataset.action === "editar"){
+        editingPremioId = premio.id;
+        fillPremioForm(premio);
+        window.scrollTo({ top: $("#card-premio-form").offsetTop - 20, behavior:"smooth" });
+      } else if (btn.dataset.action === "toggle"){
+        premio.activo = !premio.activo;
+        renderPremiosAdminTable(MOCK_PREMIOS_ADMIN);
+      }
+    });
+
+    $("#canjes-admin-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".row-btn");
+      if (!btn) return;
+      const canje = MOCK_CANJES.find(c => c.id === btn.dataset.id);
+      if (!canje) return;
+      if (btn.dataset.action === "entregar"){
+        canje.estado = "entregado";
+      } else if (btn.dataset.action === "cancelar"){
+        if (!confirm("¿Cancelar este canje? Se le devuelve el stock y los puntos al miembro.")) return;
+        canje.estado = "cancelado";
+        const premio = MOCK_PREMIOS_ADMIN.find(p => p.nombre === canje.premio_nombre);
+        if (premio && premio.stock !== null) premio.stock += 1;
+      } else {
+        return;
+      }
+      renderCanjesAdminTable(MOCK_CANJES);
+      renderPremiosAdminTable(MOCK_PREMIOS_ADMIN);
+    });
+
+    $("#premio-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = readPremioForm();
+      if (!data.nombre || !data.costo_puntos){
+        $("#pf-msg").textContent = "Completa nombre y costo en puntos.";
+        $("#pf-msg").className = "gate-msg error";
+        return;
+      }
+      if (editingPremioId){
+        const premio = MOCK_PREMIOS_ADMIN.find(p => p.id === editingPremioId);
+        Object.assign(premio, data);
+      } else {
+        MOCK_PREMIOS_ADMIN.push({ id: "mp-nuevo-" + MOCK_PREMIOS_ADMIN.length, ...data });
+      }
+      renderPremiosAdminTable(MOCK_PREMIOS_ADMIN);
+      resetPremioForm();
+      $("#pf-msg").textContent = "Guardado (modo demo).";
+      $("#pf-msg").className = "gate-msg ok";
+    });
   } else {
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -738,6 +993,81 @@
       };
     }
 
+    // ---------- Premios: modo real ----------
+    let premiosAdminCache = [];
+    let canjesAdminCache = [];
+
+    async function cargarPremiosAdmin(){
+      const { data } = await supabase.from("premios").select("*").order("orden", { ascending:true }).order("creado_en", { ascending:false });
+      premiosAdminCache = data || [];
+      renderPremiosAdminTable(premiosAdminCache);
+    }
+    async function cargarCanjesAdmin(){
+      const { data } = await supabase.from("canjes_premios").select("*").order("creado_en", { ascending:false });
+      canjesAdminCache = data || [];
+      renderCanjesAdminTable(canjesAdminCache);
+    }
+
+    $("#premios-admin-table").addEventListener("click", async (e) => {
+      const btn = e.target.closest(".row-btn");
+      if (!btn) return;
+      const premio = premiosAdminCache.find(p => p.id === btn.dataset.id);
+      if (!premio) return;
+      if (btn.dataset.action === "editar"){
+        editingPremioId = premio.id;
+        fillPremioForm(premio);
+        window.scrollTo({ top: $("#card-premio-form").offsetTop - 20, behavior:"smooth" });
+      } else if (btn.dataset.action === "toggle"){
+        const { error } = await supabase.from("premios").update({ activo: !premio.activo }).eq("id", premio.id);
+        if (error){ alert("No se pudo actualizar: " + error.message); return; }
+        await cargarPremiosAdmin();
+      }
+    });
+
+    $("#canjes-admin-table").addEventListener("click", async (e) => {
+      const btn = e.target.closest(".row-btn");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      if (btn.dataset.action === "entregar"){
+        const { error } = await supabase.from("canjes_premios").update({ estado: "entregado" }).eq("id", id);
+        if (error){ alert("No se pudo actualizar: " + error.message); return; }
+      } else if (btn.dataset.action === "cancelar"){
+        if (!confirm("¿Cancelar este canje? Se le devuelve el stock y los puntos al miembro.")) return;
+        const { error } = await supabase.from("canjes_premios").update({ estado: "cancelado" }).eq("id", id);
+        if (error){ alert("No se pudo cancelar: " + error.message); return; }
+      } else {
+        return;
+      }
+      await Promise.all([cargarCanjesAdmin(), cargarPremiosAdmin()]);
+    });
+
+    $("#premio-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = readPremioForm();
+      if (!data.nombre || !data.costo_puntos){
+        $("#pf-msg").textContent = "Completa nombre y costo en puntos.";
+        $("#pf-msg").className = "gate-msg error";
+        return;
+      }
+      $("#pf-submit").disabled = true;
+      let error;
+      if (editingPremioId){
+        ({ error } = await supabase.from("premios").update(data).eq("id", editingPremioId));
+      } else {
+        ({ error } = await supabase.from("premios").insert(data));
+      }
+      $("#pf-submit").disabled = false;
+      if (error){
+        $("#pf-msg").textContent = "No se pudo guardar: " + error.message;
+        $("#pf-msg").className = "gate-msg error";
+        return;
+      }
+      await cargarPremiosAdmin();
+      resetPremioForm();
+      $("#pf-msg").textContent = "Guardado.";
+      $("#pf-msg").className = "gate-msg ok";
+    });
+
     async function afterAuth(user){
       const { data: profile } = await supabase.from("profiles").select("es_admin").eq("id", user.id).maybeSingle();
       if (!profile || !profile.es_admin){
@@ -747,6 +1077,7 @@
       const data = await loadPanelData();
       showView("dashboard");
       renderDashboard(data);
+      await Promise.all([cargarPremiosAdmin(), cargarCanjesAdmin()]);
     }
 
     $("#btn-download-snapshot").addEventListener("click", async () => {
