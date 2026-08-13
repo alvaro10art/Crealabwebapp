@@ -512,6 +512,48 @@
   @media (max-width:980px){ .product-grid{grid-template-columns:1fr 1fr;} }
   @media (max-width:620px){ .product-grid{grid-template-columns:1fr;} }
 
+  /* ---------- PREMIOS (ecosistema de puntos) ---------- */
+  .premios-intro{max-width:640px; margin:0 auto 30px; text-align:center;}
+  .saldo-banner{
+    max-width:520px; margin:0 auto 36px; padding:16px 22px; border-radius:999px;
+    background:var(--night); color:#fff; display:flex; align-items:center; justify-content:center;
+    gap:10px; font-family:var(--sans); font-size:14px; font-weight:600; text-align:center; flex-wrap:wrap;
+  }
+  .saldo-banner b{color:var(--teal-light); font-size:16px;}
+  .saldo-banner.login-hint{background:var(--paper-2); color:var(--ink-soft); font-weight:500;}
+  .saldo-banner.login-hint a{color:var(--clay); font-weight:600; text-decoration:underline;}
+  .premios-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:24px;
+  }
+  .premio-card{
+    background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
+    padding:28px; display:flex; flex-direction:column; gap:12px;
+  }
+  .premio-card .thumb{
+    height:150px; border-radius:10px; background:var(--paper-2); border:1px solid var(--line);
+    background-size:cover; background-position:center;
+    display:flex; align-items:flex-end; padding:12px;
+  }
+  .premio-card .thumb span{
+    font-family:var(--sans); font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-soft); background:var(--paper); padding:4px 10px; border-radius:999px; border:1px solid var(--line);
+  }
+  .premio-card h3{font-size:19px; margin-bottom:0;}
+  .premio-card .premio-stock{font-size:12px; color:var(--ink-soft);}
+  .premio-card .premio-costo-row{
+    display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:auto; padding-top:6px;
+  }
+  .premio-costo{font-family:var(--serif); font-size:18px; font-weight:600; color:var(--clay);}
+  .premio-canjear-btn{
+    font-family:var(--sans); font-weight:600; font-size:13px; padding:10px 18px; border-radius:999px;
+    border:1px solid transparent; cursor:pointer; text-decoration:none; background:var(--clay); color:#fff;
+  }
+  .premio-canjear-btn:hover{background:#A6161C;}
+  .premio-canjear-btn[disabled]{background:var(--paper-2); color:var(--ink-soft); cursor:not-allowed; border-color:var(--line);}
+  .premios-empty{grid-column:1/-1; padding:48px 10px; text-align:center; font-size:14px; color:var(--ink-soft);}
+  @media (max-width:980px){ .premios-grid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:620px){ .premios-grid{grid-template-columns:1fr;} }
+
   /* ---------- COMUNIDAD ---------- */
   .community{
     display:grid; grid-template-columns:.9fr 1.1fr; gap:56px; align-items:center;
@@ -697,6 +739,7 @@
           </div>
         </li>
         <li><a href="#productos">Productos</a></li>
+        <li><a href="#premios">Premios</a></li>
         <li><a href="creallab-miembros.html">Miembros</a></li>
         <li class="nav-link-mobile-only"><a href="creallab-portal.html">Mi cuenta</a></li>
       </ul>
@@ -978,6 +1021,25 @@
     </div>
     <div class="product-grid" id="destacados-grid">
       <p class="destacados-empty">Cargando…</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREMIOS (ecosistema de puntos) ============ -->
+<section id="premios" class="on-paper-2">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Ecosistema de puntos</span>
+      <h2>Convierte tus puntos en algo real</h2>
+      <div class="premios-intro">
+        <p>Esto no es una suscripción: es el sistema de escalamiento del laboratorio. Cualquier miembro con cuenta
+        —sin importar su nivel— junta puntos con su actividad en CREALLAB y los canjea por premios reales que van
+        creciendo junto con la marca: objetos, cursos, viajes y más.</p>
+      </div>
+    </div>
+    <div id="premios-saldo-wrap"></div>
+    <div class="premios-grid" id="premios-grid">
+      <p class="premios-empty">Cargando…</p>
     </div>
   </div>
 </section>
@@ -1325,6 +1387,140 @@
   // Se cargan los productos apenas abre la página (no solo al abrir el
   // carrito), para que la sección "Lo que ya está en marcha" quede al día.
   loadProducts();
+})();
+</script>
+
+<!-- ============ PREMIOS (ecosistema de puntos) — lógica ============ -->
+<script>
+(function(){
+  const gridEl = document.getElementById('premios-grid');
+  const saldoWrapEl = document.getElementById('premios-saldo-wrap');
+  if (!gridEl) return;
+
+  function compactPts(n){ return Number(n || 0).toLocaleString("es-PE") + " pts"; }
+
+  const CATEGORIA_LABEL = { objeto:"Objeto", curso:"Curso", viaje:"Viaje", experiencia:"Experiencia", otro:"Premio" };
+
+  const MOCK_PREMIOS = [
+    { id:"pr1", nombre:"Impresora 3D", categoria:"objeto", costo_puntos:2400, stock:1, activo:true, imagen_url:"" },
+    { id:"pr2", nombre:"Prensa CHUSPA", categoria:"objeto", costo_puntos:1200, stock:2, activo:true, imagen_url:"" },
+    { id:"pr3", nombre:"Curso de tinte natural con cochinilla", categoria:"curso", costo_puntos:300, stock:null, activo:true, imagen_url:"" },
+    { id:"pr4", nombre:"Viaje-taller a Cusco", categoria:"viaje", costo_puntos:5000, stock:1, activo:true, imagen_url:"" },
+  ];
+
+  let viewer = null;          // { id, nombre } o null si no hay sesión
+  let saldo = 0;
+  let premios = [];
+  let demoMode = false;
+  let demoSaldo = 1800;       // saldo de ejemplo en modo demo, con sesión simulada
+
+  function puedeCanjear(p){
+    if (!p.activo) return false;
+    if (p.stock !== null && p.stock <= 0) return false;
+    return saldo >= p.costo_puntos;
+  }
+
+  function renderSaldo(){
+    if (!viewer){
+      saldoWrapEl.innerHTML = `<p class="saldo-banner login-hint">¿Ya tienes cuenta? <a href="creallab-portal.html">Inicia sesión</a> para ver tu saldo y canjear directo desde aquí.</p>`;
+      return;
+    }
+    saldoWrapEl.innerHTML = `<p class="saldo-banner">Tienes <b>${compactPts(saldo)}</b> canjeables ahora mismo</p>`;
+  }
+
+  function renderPremios(){
+    if (!premios.length){
+      gridEl.innerHTML = '<p class="premios-empty">Todavía no hay premios activos — vuelve pronto.</p>';
+      return;
+    }
+    gridEl.innerHTML = premios.map(p => {
+      const thumbStyle = p.imagen_url ? ` style="background-image:url('${p.imagen_url}')"` : "";
+      const stockTxt = p.stock !== null ? `<div class="premio-stock">${p.stock > 0 ? p.stock + " disponibles" : "Agotado"}</div>` : "";
+      let btnHtml;
+      if (!viewer){
+        btnHtml = `<a class="premio-canjear-btn" href="creallab-portal.html">Inicia sesión</a>`;
+      } else if (!p.activo || (p.stock !== null && p.stock <= 0)){
+        btnHtml = `<button class="premio-canjear-btn" type="button" disabled>Agotado</button>`;
+      } else if (saldo < p.costo_puntos){
+        btnHtml = `<button class="premio-canjear-btn" type="button" disabled>Te faltan ${compactPts(p.costo_puntos - saldo)}</button>`;
+      } else {
+        btnHtml = `<button class="premio-canjear-btn" data-id="${p.id}" type="button">Canjear</button>`;
+      }
+      return `
+        <div class="premio-card">
+          <div class="thumb"${thumbStyle}><span>${CATEGORIA_LABEL[p.categoria] || "Premio"}</span></div>
+          <h3>${p.nombre}</h3>
+          ${stockTxt}
+          <div class="premio-costo-row">
+            <span class="premio-costo">${compactPts(p.costo_puntos)}</span>
+            ${btnHtml}
+          </div>
+        </div>`;
+    }).join("");
+
+    gridEl.querySelectorAll(".premio-canjear-btn[data-id]").forEach(btn => {
+      btn.addEventListener("click", () => canjear(btn.dataset.id, btn));
+    });
+  }
+
+  function canjear(id, btnEl){
+    const premio = premios.find(p => p.id === id);
+    if (!premio) return;
+    if (!confirm(`¿Canjear "${premio.nombre}" por ${compactPts(premio.costo_puntos)}?`)) return;
+    btnEl.disabled = true;
+    btnEl.textContent = "Canjeando…";
+
+    if (demoMode){
+      saldo -= premio.costo_puntos;
+      demoSaldo = saldo;
+      if (premio.stock !== null) premio.stock -= 1;
+      renderSaldo(); renderPremios();
+      alert(`¡Listo! (modo demo) — "${premio.nombre}" queda registrado. Revisa el correo/WhatsApp que dejaste para coordinar la entrega.`);
+      return;
+    }
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase.from("canjes_premios").insert({ premio_id: premio.id }).then(({ error }) => {
+      if (error){
+        alert("No se pudo canjear: " + error.message);
+        renderPremios();
+        return;
+      }
+      alert(`¡Listo! "${premio.nombre}" queda registrado. Te contactaremos para coordinar la entrega.`);
+      cargarPremiosYSaldo();
+    });
+  }
+
+  function cargarPremiosYSaldo(){
+    if (typeof DEMO_MODE !== "undefined" && DEMO_MODE){
+      demoMode = true;
+      viewer = { id:"viewer-demo", nombre:"Visitante Demo" };
+      saldo = demoSaldo;
+      premios = MOCK_PREMIOS.map(p => ({ ...p }));
+      renderSaldo(); renderPremios();
+      return;
+    }
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    Promise.all([
+      supabase.from("premios").select("*").eq("activo", true).order("orden", { ascending:true }),
+      supabase.auth.getSession(),
+    ]).then(([{ data: premiosData }, { data: { session } }]) => {
+      premios = premiosData || [];
+      if (!session){
+        viewer = null; saldo = 0;
+        renderSaldo(); renderPremios();
+        return;
+      }
+      viewer = { id: session.user.id };
+      supabase.rpc("mi_saldo_canjeable").then(({ data: saldoData }) => {
+        saldo = Number(saldoData) || 0;
+        renderSaldo(); renderPremios();
+      });
+    });
+  }
+
+  cargarPremiosYSaldo();
 })();
 </script>
 
