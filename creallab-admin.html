@@ -174,6 +174,24 @@
   .pill.estado-confirmado{background:rgba(42,120,214,0.12); color:var(--viz-1);}
   .pill.estado-entregado{background:rgba(27,175,122,0.12); color:#1baf7a;}
   .pill.estado-cancelado{background:rgba(137,135,129,0.15); color:var(--viz-muted);}
+  .pill.tipo-sorteo{background:rgba(42,120,214,0.12); color:var(--viz-1);}
+  .pill.tipo-concurso{background:rgba(235,104,52,0.14); color:#c2531c;}
+  .pill.tipo-evento{background:rgba(27,175,122,0.12); color:#1baf7a;}
+  .pill.tipo-promocion{background:rgba(215,34,42,0.1); color:var(--clay);}
+  .pill.tipo-otro{background:rgba(137,135,129,0.15); color:var(--viz-muted);}
+
+  .img-upload{
+    border:1px dashed var(--line); border-radius:12px; padding:14px;
+    display:flex; align-items:center; gap:12px; cursor:pointer; background:#fff;
+  }
+  .img-upload:hover{border-color:var(--viz-muted);}
+  .img-upload input[type="file"]{display:none;}
+  .img-upload-preview{
+    width:56px; height:56px; border-radius:8px; background:var(--paper-2); flex-shrink:0;
+    background-size:cover; background-position:center; border:1px solid var(--line);
+  }
+  .img-upload-text{font-size:12.5px; color:var(--ink-soft);}
+  .img-upload-text b{color:var(--ink); display:block; font-size:13.5px;}
 </style>
 </head>
 <body>
@@ -381,6 +399,68 @@
         <h2>Canjes recientes</h2>
         <p class="chart-sub">Quién canjeó qué — marca "Entregado" cuando ya salió, o "Cancelar" si no se pudo completar (le devuelve el stock y los puntos).</p>
         <div class="admin-table-wrap" id="canjes-admin-table"></div>
+      </div>
+    </div>
+
+    <section class="section-divider">
+      <h1>Actividades de ALL</h1>
+      <p>Sorteos, concursos, eventos, promociones y cualquier otra novedad — se publican solas en la página principal invitando a que se sumen al ecosistema.</p>
+    </section>
+
+    <div class="premios-admin-grid">
+      <div class="chart-card" id="card-actividad-form">
+        <h2 id="actividad-form-title">Nueva actividad</h2>
+        <form id="actividad-form">
+          <div class="field">
+            <label for="af-tipo">Tipo</label>
+            <select id="af-tipo">
+              <option value="sorteo">Sorteo</option>
+              <option value="concurso">Concurso</option>
+              <option value="evento">Evento</option>
+              <option value="promocion">Promoción</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="af-nombre">Nombre</label>
+            <input type="text" id="af-nombre" required>
+          </div>
+          <div class="field">
+            <label for="af-fecha">Fecha (opcional)</label>
+            <input type="date" id="af-fecha">
+          </div>
+          <div class="field">
+            <label for="af-descripcion">Descripción (opcional)</label>
+            <textarea id="af-descripcion"></textarea>
+          </div>
+          <div class="field">
+            <label for="af-link">Link (opcional — "Inscríbete aquí", WhatsApp, etc.)</label>
+            <input type="text" id="af-link" placeholder="https://…">
+          </div>
+          <div class="field">
+            <label>Foto promocional (opcional)</label>
+            <label class="img-upload" id="af-imagen-label">
+              <div class="img-upload-preview" id="af-imagen-preview"></div>
+              <div class="img-upload-text">
+                <b id="af-imagen-texto">Subir imagen</b>
+                <span>PNG, JPG o WEBP — hasta 5 MB</span>
+              </div>
+              <input type="file" id="af-imagen" accept="image/png,image/jpeg,image/webp,image/gif">
+            </label>
+          </div>
+          <label class="pf-check"><input type="checkbox" id="af-activo" checked> Activa (visible en la página principal)</label>
+          <div class="pf-actions">
+            <button type="submit" class="btn btn-clay" id="af-submit">Crear actividad</button>
+            <button type="button" class="btn btn-ghost hidden" id="af-cancelar">Cancelar edición</button>
+          </div>
+          <p class="gate-msg" id="af-msg"></p>
+        </form>
+      </div>
+
+      <div class="chart-card wide" id="card-actividades-lista">
+        <h2>Catálogo</h2>
+        <p class="chart-sub">Todas tus actividades, activas e inactivas.</p>
+        <div class="admin-table-wrap" id="actividades-admin-table"></div>
       </div>
     </div>
   </div>
@@ -812,6 +892,92 @@
   }
   $("#pf-cancelar").addEventListener("click", resetPremioForm);
 
+  // ---------- ACTIVIDADES DE ALL ----------
+  const TIPO_ACTIVIDAD_LABEL = { sorteo:"Sorteo", concurso:"Concurso", evento:"Evento", promocion:"Promoción", otro:"Otro" };
+
+  function renderActividadesAdminTable(list){
+    const wrap = $("#actividades-admin-table");
+    if (!list || !list.length){
+      wrap.innerHTML = `<p class="empty-note">Todavía no has creado actividades.</p>`;
+      return;
+    }
+    const headRow = `<tr><th>Nombre</th><th>Tipo</th><th>Fecha</th><th>Estado</th><th></th></tr>`;
+    const bodyRows = list.map(a => {
+      const fecha = a.fecha ? new Date(a.fecha + "T00:00:00").toLocaleDateString("es-PE", { day:"2-digit", month:"short", year:"numeric" }) : "—";
+      return `
+      <tr>
+        <td>${a.nombre}</td>
+        <td><span class="pill tipo-${a.tipo}">${TIPO_ACTIVIDAD_LABEL[a.tipo] || a.tipo}</span></td>
+        <td>${fecha}</td>
+        <td><span class="pill ${a.activo ? "on" : "off"}">${a.activo ? "Activa" : "Inactiva"}</span></td>
+        <td>
+          <div class="row-actions">
+            <button type="button" class="row-btn" data-action="editar" data-id="${a.id}">Editar</button>
+            <button type="button" class="row-btn" data-action="toggle" data-id="${a.id}">${a.activo ? "Desactivar" : "Activar"}</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join("");
+    wrap.innerHTML = `<table class="data-table"><thead>${headRow}</thead><tbody>${bodyRows}</tbody></table>`;
+  }
+
+  let editingActividadId = null;
+  let actividadImagenFile = null;      // archivo elegido, pendiente de subir
+  let actividadImagenUrlActual = null; // URL ya guardada (al editar, si no se elige un archivo nuevo)
+
+  function setImagenPreview(url){
+    const preview = $("#af-imagen-preview");
+    preview.style.backgroundImage = url ? `url('${url}')` : "";
+  }
+
+  $("#af-imagen").addEventListener("change", () => {
+    const file = $("#af-imagen").files[0];
+    if (!file) return;
+    actividadImagenFile = file;
+    $("#af-imagen-texto").textContent = file.name;
+    setImagenPreview(URL.createObjectURL(file));
+  });
+
+  function readActividadForm(){
+    return {
+      tipo: $("#af-tipo").value,
+      nombre: $("#af-nombre").value.trim(),
+      fecha: $("#af-fecha").value || null,
+      descripcion: $("#af-descripcion").value.trim() || null,
+      link_externo: $("#af-link").value.trim() || null,
+      activo: $("#af-activo").checked,
+    };
+  }
+  function fillActividadForm(a){
+    $("#af-tipo").value = a.tipo || "otro";
+    $("#af-nombre").value = a.nombre || "";
+    $("#af-fecha").value = a.fecha || "";
+    $("#af-descripcion").value = a.descripcion || "";
+    $("#af-link").value = a.link_externo || "";
+    $("#af-activo").checked = !!a.activo;
+    actividadImagenFile = null;
+    actividadImagenUrlActual = a.imagen_url || null;
+    $("#af-imagen-texto").textContent = a.imagen_url ? "Cambiar imagen" : "Subir imagen";
+    setImagenPreview(a.imagen_url || null);
+    $("#actividad-form-title").textContent = "Editar actividad";
+    $("#af-submit").textContent = "Guardar cambios";
+    $("#af-cancelar").classList.remove("hidden");
+  }
+  function resetActividadForm(){
+    $("#actividad-form").reset();
+    $("#af-activo").checked = true;
+    $("#af-imagen-texto").textContent = "Subir imagen";
+    setImagenPreview(null);
+    $("#actividad-form-title").textContent = "Nueva actividad";
+    $("#af-submit").textContent = "Crear actividad";
+    $("#af-cancelar").classList.add("hidden");
+    $("#af-msg").textContent = ""; $("#af-msg").className = "gate-msg";
+    editingActividadId = null;
+    actividadImagenFile = null;
+    actividadImagenUrlActual = null;
+  }
+  $("#af-cancelar").addEventListener("click", resetActividadForm);
+
   // ---------- MODO DEMO ----------
   function buildMockData(){
     const win = monthWindow(6);
@@ -961,6 +1127,50 @@
       $("#pf-msg").textContent = "Guardado (modo demo).";
       $("#pf-msg").className = "gate-msg ok";
     });
+
+    // ---------- Actividades: modo demo ----------
+    const MOCK_ACTIVIDADES = [
+      { id:"ma1", tipo:"sorteo", nombre:"Sorteo de aniversario", fecha:"2026-09-01", descripcion:"Sortea una prensa CHUSPA entre todos los miembros activos.", link_externo:"", activo:true, imagen_url:"" },
+      { id:"ma2", tipo:"evento", nombre:"Feria ALLtaller", fecha:"2026-08-22", descripcion:"Feria abierta al público en el laboratorio.", link_externo:"", activo:true, imagen_url:"" },
+      { id:"ma3", tipo:"promocion", nombre:"Promo lanzamiento", fecha:null, descripcion:"", link_externo:"", activo:false, imagen_url:"" },
+    ];
+    renderActividadesAdminTable(MOCK_ACTIVIDADES);
+
+    $("#actividades-admin-table").addEventListener("click", (e) => {
+      const btn = e.target.closest(".row-btn");
+      if (!btn) return;
+      const actividad = MOCK_ACTIVIDADES.find(a => a.id === btn.dataset.id);
+      if (!actividad) return;
+      if (btn.dataset.action === "editar"){
+        editingActividadId = actividad.id;
+        fillActividadForm(actividad);
+        window.scrollTo({ top: $("#card-actividad-form").offsetTop - 20, behavior:"smooth" });
+      } else if (btn.dataset.action === "toggle"){
+        actividad.activo = !actividad.activo;
+        renderActividadesAdminTable(MOCK_ACTIVIDADES);
+      }
+    });
+
+    $("#actividad-form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const data = readActividadForm();
+      if (!data.nombre){
+        $("#af-msg").textContent = "Completa el nombre de la actividad.";
+        $("#af-msg").className = "gate-msg error";
+        return;
+      }
+      data.imagen_url = actividadImagenFile ? URL.createObjectURL(actividadImagenFile) : actividadImagenUrlActual;
+      if (editingActividadId){
+        const actividad = MOCK_ACTIVIDADES.find(a => a.id === editingActividadId);
+        Object.assign(actividad, data);
+      } else {
+        MOCK_ACTIVIDADES.push({ id: "ma-nueva-" + MOCK_ACTIVIDADES.length, ...data });
+      }
+      renderActividadesAdminTable(MOCK_ACTIVIDADES);
+      resetActividadForm();
+      $("#af-msg").textContent = "Guardado (modo demo).";
+      $("#af-msg").className = "gate-msg ok";
+    });
   } else {
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1068,6 +1278,81 @@
       $("#pf-msg").className = "gate-msg ok";
     });
 
+    // ---------- Actividades: modo real ----------
+    let actividadesAdminCache = [];
+
+    async function cargarActividadesAdmin(){
+      const { data } = await supabase.from("actividades").select("*").order("orden", { ascending:true }).order("creado_en", { ascending:false });
+      actividadesAdminCache = data || [];
+      renderActividadesAdminTable(actividadesAdminCache);
+    }
+
+    async function subirImagenActividad(file){
+      const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+      const path = `actividad-${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error } = await supabase.storage.from("actividades-imagenes").upload(path, file);
+      if (error) throw error;
+      const { data } = supabase.storage.from("actividades-imagenes").getPublicUrl(path);
+      return data.publicUrl;
+    }
+
+    $("#actividades-admin-table").addEventListener("click", async (e) => {
+      const btn = e.target.closest(".row-btn");
+      if (!btn) return;
+      const actividad = actividadesAdminCache.find(a => a.id === btn.dataset.id);
+      if (!actividad) return;
+      if (btn.dataset.action === "editar"){
+        editingActividadId = actividad.id;
+        fillActividadForm(actividad);
+        window.scrollTo({ top: $("#card-actividad-form").offsetTop - 20, behavior:"smooth" });
+      } else if (btn.dataset.action === "toggle"){
+        const { error } = await supabase.from("actividades").update({ activo: !actividad.activo }).eq("id", actividad.id);
+        if (error){ alert("No se pudo actualizar: " + error.message); return; }
+        await cargarActividadesAdmin();
+      }
+    });
+
+    $("#actividad-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = readActividadForm();
+      if (!data.nombre){
+        $("#af-msg").textContent = "Completa el nombre de la actividad.";
+        $("#af-msg").className = "gate-msg error";
+        return;
+      }
+      $("#af-submit").disabled = true;
+      if (actividadImagenFile){
+        $("#af-msg").textContent = "Subiendo imagen…";
+        $("#af-msg").className = "gate-msg";
+        try {
+          data.imagen_url = await subirImagenActividad(actividadImagenFile);
+        } catch (err) {
+          $("#af-submit").disabled = false;
+          $("#af-msg").textContent = "No se pudo subir la imagen: " + err.message;
+          $("#af-msg").className = "gate-msg error";
+          return;
+        }
+      } else {
+        data.imagen_url = actividadImagenUrlActual;
+      }
+      let error;
+      if (editingActividadId){
+        ({ error } = await supabase.from("actividades").update(data).eq("id", editingActividadId));
+      } else {
+        ({ error } = await supabase.from("actividades").insert(data));
+      }
+      $("#af-submit").disabled = false;
+      if (error){
+        $("#af-msg").textContent = "No se pudo guardar: " + error.message;
+        $("#af-msg").className = "gate-msg error";
+        return;
+      }
+      await cargarActividadesAdmin();
+      resetActividadForm();
+      $("#af-msg").textContent = "Guardado.";
+      $("#af-msg").className = "gate-msg ok";
+    });
+
     async function afterAuth(user){
       const { data: profile } = await supabase.from("profiles").select("es_admin").eq("id", user.id).maybeSingle();
       if (!profile || !profile.es_admin){
@@ -1077,7 +1362,7 @@
       const data = await loadPanelData();
       showView("dashboard");
       renderDashboard(data);
-      await Promise.all([cargarPremiosAdmin(), cargarCanjesAdmin()]);
+      await Promise.all([cargarPremiosAdmin(), cargarCanjesAdmin(), cargarActividadesAdmin()]);
     }
 
     $("#btn-download-snapshot").addEventListener("click", async () => {
