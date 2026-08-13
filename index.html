@@ -523,12 +523,24 @@
   .saldo-banner.login-hint{background:var(--paper-2); color:var(--ink-soft); font-weight:500;}
   .saldo-banner.login-hint a{color:var(--clay); font-weight:600; text-decoration:underline;}
   .premios-grid{
-    display:grid; grid-template-columns:repeat(3,1fr); gap:24px;
+    display:flex; gap:20px; overflow-x:auto; scroll-snap-type:x mandatory;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none; padding:4px 4px 10px;
   }
+  .premios-grid::-webkit-scrollbar{display:none;}
   .premio-card{
     background:var(--paper); border:1px solid var(--line); border-radius:var(--radius);
     padding:28px; display:flex; flex-direction:column; gap:12px;
+    flex:0 0 78%; max-width:300px; scroll-snap-align:start;
   }
+  @media(min-width:620px){ .premio-card{flex:0 0 46%; max-width:320px;} }
+  @media(min-width:980px){ .premio-card{flex:0 0 31.5%; max-width:340px;} }
+  .carousel-dots{display:flex; justify-content:center; gap:8px; margin-top:6px;}
+  .carousel-dot{
+    width:8px; height:8px; border-radius:999px; border:none; padding:0;
+    background:var(--line); cursor:pointer; transition:background .2s ease, width .2s ease;
+  }
+  .carousel-dot:hover{background:var(--ink-soft);}
+  .carousel-dot.active{background:var(--clay); width:22px;}
   .premio-card .thumb{
     height:150px; border-radius:10px; background:var(--paper-2); border:1px solid var(--line);
     background-size:cover; background-position:center;
@@ -551,8 +563,26 @@
   .premio-canjear-btn:hover{background:#A6161C;}
   .premio-canjear-btn[disabled]{background:var(--paper-2); color:var(--ink-soft); cursor:not-allowed; border-color:var(--line);}
   .premios-empty{grid-column:1/-1; padding:48px 10px; text-align:center; font-size:14px; color:var(--ink-soft);}
-  @media (max-width:980px){ .premios-grid{grid-template-columns:1fr 1fr;} }
-  @media (max-width:620px){ .premios-grid{grid-template-columns:1fr;} }
+  .section-head .btn{margin-top:8px;}
+
+  /* ---------- ACTIVIDADES DE ALL ---------- */
+  .actividad-tipo-badge{
+    font-family:var(--sans); font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+    padding:4px 10px; border-radius:999px; display:inline-block;
+  }
+  .actividad-tipo-sorteo{background:rgba(42,120,214,0.12); color:#2a78d6;}
+  .actividad-tipo-concurso{background:rgba(235,104,52,0.14); color:#c2531c;}
+  .actividad-tipo-evento{background:rgba(27,175,122,0.12); color:#1baf7a;}
+  .actividad-tipo-promocion{background:rgba(215,34,42,0.1); color:var(--clay);}
+  .actividad-tipo-otro{background:var(--paper-2); color:var(--ink-soft);}
+  .premio-card .actividad-fecha{font-size:12.5px; color:var(--ink-soft); font-weight:600;}
+  .premio-card .actividad-cta-row{margin-top:auto; padding-top:6px;}
+  .actividad-cta-btn{
+    font-family:var(--sans); font-weight:600; font-size:13px; padding:10px 18px; border-radius:999px;
+    border:1px solid var(--line); cursor:pointer; text-decoration:none; background:transparent; color:var(--ink);
+    display:inline-block;
+  }
+  .actividad-cta-btn:hover{border-color:var(--ink);}
 
   /* ---------- COMUNIDAD ---------- */
   .community{
@@ -739,6 +769,7 @@
           </div>
         </li>
         <li><a href="#productos">Productos</a></li>
+        <li><a href="#actividades">Actividades</a></li>
         <li><a href="#premios">Premios</a></li>
         <li><a href="creallab-miembros.html">Miembros</a></li>
         <li class="nav-link-mobile-only"><a href="creallab-portal.html">Mi cuenta</a></li>
@@ -1025,6 +1056,25 @@
   </div>
 </section>
 
+<!-- ============ ACTIVIDADES DE ALL ============ -->
+<section id="actividades">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Actividades de ALL</span>
+      <h2>Sorteos, concursos y eventos del laboratorio</h2>
+      <div class="premios-intro">
+        <p>Todo lo que va pasando en el ecosistema — sorteos, concursos, eventos y promociones — para que te sumes
+        aunque todavía no tengas cuenta.</p>
+      </div>
+      <a href="#join" class="btn btn-primary">Únete al ecosistema</a>
+    </div>
+    <div class="premios-grid" id="actividades-grid">
+      <p class="premios-empty">Cargando…</p>
+    </div>
+    <div class="carousel-dots" id="actividades-dots"></div>
+  </div>
+</section>
+
 <!-- ============ PREMIOS (ecosistema de puntos) ============ -->
 <section id="premios" class="on-paper-2">
   <div class="container">
@@ -1036,11 +1086,13 @@
         —sin importar su nivel— junta puntos con su actividad en CREALLAB y los canjea por premios reales que van
         creciendo junto con la marca: objetos, cursos, viajes y más.</p>
       </div>
+      <a href="#join" class="btn btn-primary">Únete al ecosistema</a>
     </div>
     <div id="premios-saldo-wrap"></div>
     <div class="premios-grid" id="premios-grid">
       <p class="premios-empty">Cargando…</p>
     </div>
+    <div class="carousel-dots" id="premios-dots"></div>
   </div>
 </section>
 
@@ -1414,6 +1466,42 @@
   let demoMode = false;
   let demoSaldo = 1800;       // saldo de ejemplo en modo demo, con sesión simulada
 
+  // Viñetas (puntos) del carrusel deslizable: una por tarjeta, se arma
+  // solo con las que haya en cada momento. La usan tanto Premios como
+  // Actividades (se expone en window para que la reutilice ese script).
+  function wireCarouselDots(gridEl, dotsEl){
+    if (!dotsEl) return;
+    const cards = Array.from(gridEl.children).filter(el => el.classList.contains('premio-card'));
+    if (cards.length <= 1){ dotsEl.innerHTML = ""; return; }
+    dotsEl.innerHTML = cards.map((_, i) => `<button type="button" class="carousel-dot" data-i="${i}" aria-label="Ver ${i+1}"></button>`).join("");
+    const dots = Array.from(dotsEl.children);
+    function updateActive(){
+      const gridRect = gridEl.getBoundingClientRect();
+      const center = gridRect.left + gridRect.width / 2;
+      let closest = 0, closestDist = Infinity;
+      cards.forEach((card, i) => {
+        const r = card.getBoundingClientRect();
+        const cardCenter = r.left + r.width / 2;
+        const dist = Math.abs(cardCenter - center);
+        if (dist < closestDist){ closestDist = dist; closest = i; }
+      });
+      dots.forEach((d, i) => d.classList.toggle("active", i === closest));
+    }
+    let ticking = false;
+    gridEl.addEventListener("scroll", () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => { updateActive(); ticking = false; });
+    });
+    dots.forEach((d, i) => {
+      d.addEventListener("click", () => {
+        cards[i].scrollIntoView({ behavior:"smooth", inline:"start", block:"nearest" });
+      });
+    });
+    updateActive();
+  }
+  window.wireCarouselDots = wireCarouselDots;
+
   function puedeCanjear(p){
     if (!p.activo) return false;
     if (p.stock !== null && p.stock <= 0) return false;
@@ -1429,8 +1517,10 @@
   }
 
   function renderPremios(){
+    const dotsEl = document.getElementById('premios-dots');
     if (!premios.length){
       gridEl.innerHTML = '<p class="premios-empty">Todavía no hay premios activos — vuelve pronto.</p>';
+      if (dotsEl) dotsEl.innerHTML = "";
       return;
     }
     gridEl.innerHTML = premios.map(p => {
@@ -1461,6 +1551,8 @@
     gridEl.querySelectorAll(".premio-canjear-btn[data-id]").forEach(btn => {
       btn.addEventListener("click", () => canjear(btn.dataset.id, btn));
     });
+
+    wireCarouselDots(gridEl, dotsEl);
   }
 
   function canjear(id, btnEl){
@@ -1521,6 +1613,68 @@
   }
 
   cargarPremiosYSaldo();
+})();
+</script>
+
+<!-- ============ ACTIVIDADES DE ALL — lógica ============ -->
+<script>
+(function(){
+  const gridEl = document.getElementById('actividades-grid');
+  if (!gridEl) return;
+
+  const TIPO_ACTIVIDAD_LABEL = { sorteo:"Sorteo", concurso:"Concurso", evento:"Evento", promocion:"Promoción", otro:"Novedad" };
+
+  const MOCK_ACTIVIDADES = [
+    { id:"ac1", tipo:"sorteo", nombre:"Sorteo de aniversario", fecha:"2026-09-01", descripcion:"Sortea una prensa CHUSPA entre todos los miembros activos.", link_externo:"", imagen_url:"" },
+    { id:"ac2", tipo:"evento", nombre:"Feria ALLtaller", fecha:"2026-08-22", descripcion:"Feria abierta al público en el laboratorio, con demostraciones en vivo.", link_externo:"https://wa.me/51934397763", imagen_url:"" },
+    { id:"ac3", tipo:"concurso", nombre:"Concurso de fotografía textil", fecha:"2026-10-15", descripcion:"Sube tu mejor foto de proceso textil y gana puntos extra.", link_externo:"", imagen_url:"" },
+  ];
+
+  function formatFecha(f){
+    if (!f) return "";
+    const d = new Date(f + "T00:00:00");
+    return d.toLocaleDateString("es-PE", { day:"2-digit", month:"long", year:"numeric" });
+  }
+
+  function renderActividades(list){
+    const dotsEl = document.getElementById('actividades-dots');
+    if (!list.length){
+      gridEl.innerHTML = '<p class="premios-empty">Todavía no hay actividades activas — vuelve pronto.</p>';
+      if (dotsEl) dotsEl.innerHTML = "";
+      return;
+    }
+    gridEl.innerHTML = list.map(a => {
+      const thumbStyle = a.imagen_url ? ` style="background-image:url('${a.imagen_url}'); background-size:cover; background-position:center;"` : "";
+      const fechaHtml = a.fecha ? `<div class="actividad-fecha">${formatFecha(a.fecha)}</div>` : "";
+      const ctaHtml = a.link_externo
+        ? `<a class="actividad-cta-btn" target="_blank" rel="noopener" href="${a.link_externo}">Más información</a>`
+        : "";
+      return `
+        <div class="premio-card">
+          <div class="thumb"${thumbStyle}><span class="actividad-tipo-badge actividad-tipo-${a.tipo}">${TIPO_ACTIVIDAD_LABEL[a.tipo] || "Novedad"}</span></div>
+          <h3>${a.nombre}</h3>
+          ${fechaHtml}
+          <p>${a.descripcion || ""}</p>
+          <div class="actividad-cta-row">${ctaHtml}</div>
+        </div>`;
+    }).join("");
+
+    if (typeof window.wireCarouselDots === "function") window.wireCarouselDots(gridEl, dotsEl);
+  }
+
+  function cargarActividades(){
+    if (typeof DEMO_MODE !== "undefined" && DEMO_MODE){
+      renderActividades(MOCK_ACTIVIDADES);
+      return;
+    }
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    supabase.from("actividades").select("*")
+      .eq("activo", true)
+      .order("orden", { ascending:true }).order("fecha", { ascending:true, nullsFirst:false })
+      .then(({ data }) => renderActividades(data || []));
+  }
+
+  cargarActividades();
 })();
 </script>
 
